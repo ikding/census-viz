@@ -31,9 +31,6 @@ library(UScensus2010)
 library(UScensus2010tract)
 library(UScensus2010blkgrp)
 library(UScensus2010blk)
-library(zipcode)
-library(jsonlite)
-library(tools)
 
 # US Census Data ----
 # Official shape files from Census Bureau ----
@@ -212,6 +209,78 @@ p
 # http://eglenn.scripts.mit.edu/citystate/2013/07/acs-r-example-downloading-all-the-tracts-in-a-county-or-state/
 # api.key.install(key = '') need to request your own key at Census API: http://api.census.gov/data/key_signup.html
 
+# Tables of interest:
+# B01001: Sex by Age
+# B01003: Total Population
+
+# Income:
+# B19001: Household Income In The Past 12 Months
+# B19013: Median Household Income In The Past 12 Months
+# B19101: Family Income In The Past 12 Months
+# B19113: Median Family Income In The Past 12 Months
+# B19201: Nonfamily Household Income In The Past 12 Months
+# B19202: Median Nonfamily Household Income In The Past 12 Months
+# B19301: Per Capita Income In The Past 12 Months
+
+# Housing units status (probably not necessary - REConnect team should have more granular data)
+# B25002: Occupancy Status
+# B25003: Tenure (owner vs renter occupied)
+
+# Difference between household and family income: http://economistsoutlook.blogs.realtor.org/2014/04/08/median-income-family-vs-household/
+
+acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("..", "..", "..", "..", "data", "census", "acs")){    
+    # Test variables, delete by the end
+#     endyear = 2011; span = 5; state = "DC"; geo_level = "tract"; table.number = "B01003"
+    
+    library(acs)
+    
+    # Load state FIPS list
+    state_fips <- read.csv("../../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
+    state_code <- state_fips[state_fips$twoletter == state,]$code
+#     state_code = sprintf("%02s", state_code) 
+    
+    if (geo_level == "county"){
+        geo <- geo.make(state = state_code, county = "*", check = T)
+    } else if (geo_level == "tract"){
+        geo <- geo.make(state = state_code, county = "*", tract = "*", check = T)
+    } else if (geo_level == "block group"){
+        geo_interim <- acs.fetch(endyar = endyear, span = span, geography=geo.make(state = state_code, county="*"), table.number="B01003")
+        geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim))[[3]], tract = "*", block.group = "*", check = T)
+    } else {
+        print('Accepted geo_level: "county", "tract", "block group"')
+    }
+    
+    acsData <- acs.fetch(endyear = endyear, span = span, geography = geo, table.number = table.number)
+    acsData <<- acsData
+
+    acsDataEst <- data.frame(estimate(acsData))
+    acsDataEst$NAME <- rownames(acsDataEst)
+    acsDataEst <- merge(geography(acsData), acsDataEst)
+    
+    acsDataErr <- data.frame(standard.error(acsData))
+    acsDataErr$NAME <- rownames(acsDataErr)
+    acsDataErr <- merge(geography(acsData), acsDataErr)
+
+    write.table(acsDataEst, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, ".txt")), sep = "\t", row.names = F)
+    write.table(acsDataErr, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, "_error.txt")), sep = "\t", row.names = F)
+    
+    return(acsDataEst)
+    
+}
+
+acsSave(endyear = 2012, state = "MD", geo_level = "county", table.number = "B01001")
+acsSave(endyear = 2010, state = "MD", geo_level = "tract", table.number = "B01001")
+
+str(acsSave(endyear = 2012, state = "MD", geo_level = "tract", table.number = "B01001"))
+
+acsSave(state = "DC", geo_level = "tract")
+acsSave(state = "DC", geo_level = "block group")
+
+# DC tracts
+DC = acs.fetch(geography=geo.make(state=11, county="*"), table.number="B01003")
+DCTracts=geo.make(state="DC", county=as.numeric(geography(DC)[[3]]), tract="*", check=T)
+acs.fetch(geography=DCTracts, table.number="B01003") 
+
 # Figure out which census area to download the data
 geo.lookup(state = "DC", county = "Columbia", county.subdivision = "*")
 DC = geo.make(state = 11, county = 1)
@@ -224,13 +293,14 @@ DC = acs.fetch(geography=geo.make(state=11, county="*"), table.number="B01003")
 # geography(DC)[[3]]
 DCTracts=geo.make(state="DC", county=as.numeric(geography(DC)[[3]]), tract="*", check=T)
 acs.fetch(geography=DCTracts, table.number="B01003") 
+acs.fetch(endyear = 2013, span = 1, geography=DCTracts, table.number="B01003") 
 acs.fetch(endyear = 2011, span = 1, geography=DCTracts, table.number="B01003") 
 
 # Drill to block groups in DC.
 DC = acs.fetch(endyar = 2010, span = 5, geography=geo.make(state=11, county="*"), table.number="B01003")
 DC_bg = geo.make(state="DC", county=as.numeric(geography(DC)[[3]]), tract="*", block.group = "*", check=T)
 DC_bg_pop = acs.fetch(endyear = 2010, span = 5, geography = DC_bg, table.number = "B01003")
-DC_bg_median_income = acs.fetch(endyear = 2010, span = 5, geography = DC_bg, table.number = "B19113")
+DC_bg_median_income = acs.fetch(endyear = 2010, span = 5, geography = DC_bg, table.number = "B19101")
 
 # Creates data frame of the estimates from acs object
 head(geography(DC_bg_pop))
@@ -243,6 +313,7 @@ head(DC_bg_pop_df)
 tail(DC_bg_pop_df)
 
 # Convert state, county, tract and block group into fips codes.
+VA = acs.fetch(geography=geo.make(state=51, county="*"), table.number="B01003")
 
 # Need to pad codes with zeros first
 # state: 2 digits
