@@ -234,10 +234,15 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     
     library(acs)
     
-    # Load state FIPS list
+    # Load state FIPS list and convert to integers
     state_fips <- read.csv("../../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
     state_code <- state_fips[state_fips$twoletter == state,]$code
-#     state_code = sprintf("%02s", state_code) 
+    if (length(state_code) != 1){
+        print(paste("State" , state, "does not exist."))
+        break
+    }
+    
+    # geo.make geography depending on state and geo_level specified by user
     
     if (geo_level == "county"){
         geo <- geo.make(state = state_code, county = "*", check = T)
@@ -247,21 +252,44 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
         geo_interim <- acs.fetch(endyar = endyear, span = span, geography=geo.make(state = state_code, county="*"), table.number="B01003")
         geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim))[[3]], tract = "*", block.group = "*", check = T)
     } else {
-        print('Accepted geo_level: "county", "tract", "block group"')
+        print("Supported geo_level: county, tract, block group")
+        break
     }
     
     acsData <- acs.fetch(endyear = endyear, span = span, geography = geo, table.number = table.number)
-    acsData <<- acsData
-
+    
+    # Get fips code from state, county, and block groups, when available,
+    # and concatenate to get long-form FIPS for plotting.
+    
+    acsDataGeo <- geography(acsData)
+    fips <-  paste0(sprintf("%02s", acsDataGeo$state))
+    
+    if ("county" %in% names(acsDataGeo)){
+        fips <- paste0(fips, sprintf("%03s", acsDataGeo$county))
+    }
+    
+    if ("tract" %in% names(acsDataGeo)){
+        fips <- paste0(fips, sprintf("%03s", acsDataGeo$tract))
+    }
+    
+    if ("blockgroup" %in% names(acsDataGeo)){
+        fips <- paste0(fips, sprintf("%06s", acsDataGeo$blockgroup))
+    }
+    
+    acsDataGeo$fips <- fips
+    
+    # Get estimates from acs data; merge fips codes to the dataframe
     acsDataEst <- data.frame(estimate(acsData))
     acsDataEst$NAME <- rownames(acsDataEst)
-    acsDataEst <- merge(geography(acsData), acsDataEst)
+    acsDataEst <- merge(acsDataGeo, acsDataEst)
     
+    # Get standard errors from acs data; merge fips codes to the dataframe
     acsDataErr <- data.frame(standard.error(acsData))
     acsDataErr$NAME <- rownames(acsDataErr)
-    acsDataErr <- merge(geography(acsData), acsDataErr)
+    acsDataErr <- merge(acsDataGeo, acsDataErr)
 
-    write.table(acsDataEst, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, ".txt")), sep = "\t", row.names = F)
+    # Write output to tab-delimited file in the output_path
+    write.table(acsDataEst, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, "_estimate.txt")), sep = "\t", row.names = F)
     write.table(acsDataErr, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, "_error.txt")), sep = "\t", row.names = F)
     
     return(acsDataEst)
@@ -270,8 +298,28 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
 
 acsSave(endyear = 2012, state = "MD", geo_level = "county", table.number = "B01001")
 acsSave(endyear = 2010, state = "MD", geo_level = "tract", table.number = "B01001")
+acsSave(endyear = 2012, state = "DC", geo_level = "block group", table.number = "B01001")
 
 str(acsSave(endyear = 2012, state = "MD", geo_level = "tract", table.number = "B01001"))
+
+# Use nested for loops to download every single combination of the data
+
+# Supported year range for 5-year API: http://www.census.gov/data/developers/data-sets/acs-survey-5-year-data.html
+list_year = seq(2010, 2013, 1)
+list_state = c("DC") # c("DC", "MD", "VA")
+list_geo = c("county", "tract", "block group")
+list_table = c("B01001", "B01003") # c("B01001", "B01003", "B19001", "B19013")
+
+for (y in list_year){
+    for (s in list_state){
+        for (g in list_geo){
+            for (t in list_table){
+                print(paste(y, s, g, t))
+                acsSave(endyear = y, state = s, geo_level = g, table.number = t)
+            }
+        }
+    }
+}
 
 acsSave(state = "DC", geo_level = "tract")
 acsSave(state = "DC", geo_level = "block group")
