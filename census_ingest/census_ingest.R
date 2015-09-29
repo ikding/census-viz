@@ -26,8 +26,8 @@ library(acs)
 # Difference between household and family income: http://economistsoutlook.blogs.realtor.org/2014/04/08/median-income-family-vs-household/
 
 acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("..", "..", "..", "..", "data", "census", "acs")){    
-    # Test variables, delete by the end
-#     endyear = 2011; span = 5; state = "DC"; geo_level = "tract"; table.number = "B01003"
+#     Test variables, delete by the end
+#     endyear = 2011; span = 5; state = "MD"; geo_level = "block group"; table.number = "B01003"
     
     library(acs)
     
@@ -47,7 +47,7 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
         geo <- geo.make(state = state_code, county = "*", tract = "*", check = T)
     } else if (geo_level == "block group"){
         geo_interim <- acs.fetch(endyar = endyear, span = span, geography=geo.make(state = state_code, county="*"), table.number="B01003")
-        geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim))[[3]], tract = "*", block.group = "*", check = T)
+        geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim)$county), tract = "*", block.group = "*", check = T)
     } else {
         print("Supported geo_level: county, tract, block group")
         break
@@ -66,11 +66,11 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     }
     
     if ("tract" %in% names(acsDataGeo)){
-        fips <- paste0(fips, sprintf("%03s", acsDataGeo$tract))
+        fips <- paste0(fips, sprintf("%06s", acsDataGeo$tract))
     }
     
     if ("blockgroup" %in% names(acsDataGeo)){
-        fips <- paste0(fips, sprintf("%06s", acsDataGeo$blockgroup))
+        fips <- paste0(fips, sprintf("%01s", acsDataGeo$blockgroup))
     }
     
     acsDataGeo$fips <- fips
@@ -86,8 +86,8 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     acsDataErr <- merge(acsDataGeo, acsDataErr)
 
     # Write output to tab-delimited file in the output_path
-    write.table(acsDataEst, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, "_estimate.txt")), sep = "\t", row.names = F)
-    write.table(acsDataErr, file = file.path(output_path, paste0(state, "_", geo_level, "_", endyear-span+1, "-", endyear, "_", table.number, "_error.txt")), sep = "\t", row.names = F)
+    write.table(acsDataEst, file = file.path(output_path, "estimate", paste0(state, "_", sub(" ", "", geo_level), "_", endyear-span+1, "-", endyear, "_", table.number, ".txt")), sep = "\t", row.names = F)
+    write.table(acsDataErr, file = file.path(output_path, "error", paste0(state, "_", sub(" ", "", geo_level), "_", endyear-span+1, "-", endyear, "_", table.number, ".txt")), sep = "\t", row.names = F)
     
     return(acsDataEst)
     
@@ -97,26 +97,34 @@ acsSave(endyear = 2012, state = "MD", geo_level = "county", table.number = "B010
 acsSave(endyear = 2010, state = "MD", geo_level = "tract", table.number = "B01001")
 acsSave(endyear = 2012, state = "DC", geo_level = "block group", table.number = "B01001")
 
-str(acsSave(endyear = 2012, state = "MD", geo_level = "tract", table.number = "B01001"))
+str(acsSave(endyear = 2012, state = "MD", geo_level = "block group", table.number = "B01001"))
 
 # Use nested for loops to download every single combination of the data
-
 # Supported year range for 5-year API: http://www.census.gov/data/developers/data-sets/acs-survey-5-year-data.html
-list_year = seq(2010, 2013, 1)
-list_state = c("DC") # c("DC", "MD", "VA")
-list_geo = c("county", "tract", "block group")
-list_table = c("B01001", "B01003") # c("B01001", "B01003", "B19001", "B19013")
 
+# Small test set
+# list_year = 2011 # seq(2010, 2013, 1)
+# list_state = c("MD") # c("DC", "MD", "VA")
+# list_geo = c("county", "tract", "block group")
+# list_table = c("B01003") # c("B01001", "B01003", "B19001", "B19013")
+
+# Large test set
+list_year = seq(2010, 2013, 1)
+list_state = c("DC", "MD", "VA")
+list_geo = c("county", "tract", "block group")
+list_table = c("B01001", "B01003", "B19001", "B19013")
+
+start = proc.time()
 for (y in list_year){
     for (s in list_state){
         for (g in list_geo){
             for (t in list_table){
-                print(paste(y, s, g, t))
+#                 print(paste(y, s, g, t))
                 acsSave(endyear = y, state = s, geo_level = g, table.number = t)
             }
         }
     }
 }
+end = proc.time()
 
-acsSave(state = "DC", geo_level = "tract")
-acsSave(state = "DC", geo_level = "block group")
+start-end # It took about 55 minutes on my home internet to download all 144 combinations
