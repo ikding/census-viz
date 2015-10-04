@@ -172,6 +172,7 @@ chomapNonZero(data = DCMetro_tract_map, title = "Total Population by Census Trac
 
 
 
+
 # Interactive Visualization with leaflet ----
 
 m <- leaflet(DCMetro_tract_map) %>% 
@@ -225,18 +226,148 @@ m <- leaflet(DCMetro_tract_map_sp) %>%
     setView(lng = -77.1, lat = 38.9, zoom = 9) %>% 
 #     addTiles() %>%
     addProviderTiles("CartoDB.Positron") %>%
-    addPolygons(stroke = F, fillOpacity  = 0.75, color = ~pal(P0010001))
+    addPolygons(stroke = F, fillOpacity  = 0.75, color = ~pal(P0010001)) %>%
+    addLegend(pal = pal, values = ~P0010001, opacity = 1)
 m
 
 binpal <- colorBin("YlOrRd", DCMetro_tract_map_sp@data$P0010001, 7, pretty = FALSE)
+qpal <- colorQuantile("YlOrRd", DCMetro_tract_map_sp@data$P0010001, 5)
 
 m <- leaflet(DCMetro_tract_map_sp) %>% 
     setView(lng = -77.1, lat = 38.9, zoom = 9) %>% 
     #     addTiles() %>%
     addProviderTiles("CartoDB.Positron") %>%
-    addPolygons(stroke = F, fillOpacity  = 0.75, color = ~binpal(P0010001), popup = paste0("<strong>Population: </strong>", DCMetro_tract_map_sp@data$P0010001))
+    addPolygons(stroke = F, fillOpacity  = 0.5, color = ~qpal(P0010001), 
+                popup = paste(sep = "<br/>", 
+                              paste0("<strong>State: </strong>", DCMetro_tract_map_sp@data$State.FIPS),
+                              paste0("<strong>County: </strong>", DCMetro_tract_map_sp@data$County.FIPS),
+                              paste0("<strong>Name: </strong>", DCMetro_tract_map_sp@data$Name),
+                              paste0("<strong>FIPS: </strong>", DCMetro_tract_map_sp@data$fips),
+                              paste0("<strong>Population: </strong>", DCMetro_tract_map_sp@data$P0010001)
+                              )
+#                 popup = paste0("<strong>Population: </strong>", DCMetro_tract_map_sp@data$P0010001, "<br/>", "<strong>FIPS: </strong>: ", DCMetro_tract_map_sp@data$fips)
+                ) %>%
+    addLegend(pal = qpal, values = ~P0010001, opacity = 1)
 m
 
 names(DCMetro_tract_map_sp@data)
 sort(DCMetro_tract_map_sp@data$P0010001)
-?
+
+
+# Convert age/sex variables to histograms ----
+
+pop_table <- read.csv("census_sexbyage_var_converted.csv", stringsAsFactors = F)
+str(pop_table)
+pop_table
+
+names(DCMetro_tract_map_sp@data)
+DCMetro_tract_pop <- DCMetro_tract_map_sp@data[,str_sub(names(DCMetro_tract_map_sp@data), start = 1, end = 3) == "P01"]
+DCMetro_tract_pop$fips <- rownames(DCMetro_tract_pop)
+head(DCMetro_tract_pop)
+
+DCMetro_tract_pop_t <- t(DCMetro_tract_pop)
+DCMetro_tract_pop_t[,1]
+
+nrow(DCMetro_tract_pop)
+
+
+
+DCMetro_tract_pop_single <- DCMetro_tract_pop["11001002201",]
+str(DCMetro_tract_pop_single)
+single_fips <- data.frame(t(DCMetro_tract_pop_single))
+names(single_fips) <- "population"
+single_fips$population <- as.integer(as.character(single_fips$population))
+single_fips
+
+
+# 15-17 + 18-19 -> 15-19
+single_fips["P0120007a",] <- single_fips["P0120006",] + single_fips["P0120007",]
+single_fips["P0120031a",] <- single_fips["P0120030",] + single_fips["P0120031",]
+
+# 20 + 21 + 22-24 -> 20-24
+single_fips["P0120010a",] <- single_fips["P0120008",] + single_fips["P0120009",] + single_fips["P0120010",]
+single_fips["P0120034a",] <- single_fips["P0120032",] + single_fips["P0120033",] + single_fips["P0120034",]
+
+# 60-61 + 62-64 -> 60-64
+single_fips["P0120019a",] <- single_fips["P0120018",] + single_fips["P0120019",]
+single_fips["P0120043a",] <- single_fips["P0120042",] + single_fips["P0120043",]
+
+# 65-66 + 67-69 -> 65-69
+single_fips["P0120021a",] <- single_fips["P0120020",] + single_fips["P0120021",]
+single_fips["P0120045a",] <- single_fips["P0120044",] + single_fips["P0120045",]
+
+single_fips$var <- row.names(single_fips)
+
+single_fips <- merge(single_fips, pop_table, by.x = "var", by.y = "variable")
+single_fips <- subset(single_fips, age != "Total")
+single_fips$age <- factor(single_fips$age, levels = single_fips$age, labels = single_fips$age)
+single_fips[single_fips$gender == "Male",]$population = -1 * single_fips[single_fips$gender == "Male",]$population
+
+single_fips$age
+
+p <- ggplot(single_fips, aes(x = age, y = population, fill = gender))
+p <- p + geom_bar(subset = .(gender == "Female"), stat = "identity")
+p <- p + geom_bar(subset = .(gender == "Male"), stat = "identity")
+# p <- p + geom_density(subset = .(gender == "Female"))
+# p <- p + geom_density(subset = .(gender == "Male"))
+p <- p + coord_flip()
+p <- p + scale_fill_brewer(palette = "Set1")
+p <- p + theme_bw()
+p
+
+getPopPyramidDF <- function(data, fips = "11001002201"){
+    
+    DF <- data@data[,str_sub(names(data@data), start = 1, end = 3) == "P01"]
+    DF$fips <- rownames(DF)
+    
+    single_fips <- DF[fips,]
+    single_fips <- data.frame(t(single_fips))
+    
+    names(single_fips) <- "population"
+    single_fips$population <- as.integer(as.character(single_fips$population))
+    
+    # 15-17 + 18-19 -> 15-19
+    single_fips["P0120007a",] <- single_fips["P0120006",] + single_fips["P0120007",]
+    single_fips["P0120031a",] <- single_fips["P0120030",] + single_fips["P0120031",]
+    
+    # 20 + 21 + 22-24 -> 20-24
+    single_fips["P0120010a",] <- single_fips["P0120008",] + single_fips["P0120009",] + single_fips["P0120010",]
+    single_fips["P0120034a",] <- single_fips["P0120032",] + single_fips["P0120033",] + single_fips["P0120034",]
+    
+    # 60-61 + 62-64 -> 60-64
+    single_fips["P0120019a",] <- single_fips["P0120018",] + single_fips["P0120019",]
+    single_fips["P0120043a",] <- single_fips["P0120042",] + single_fips["P0120043",]
+    
+    # 65-66 + 67-69 -> 65-69
+    single_fips["P0120021a",] <- single_fips["P0120020",] + single_fips["P0120021",]
+    single_fips["P0120045a",] <- single_fips["P0120044",] + single_fips["P0120045",]
+    
+    single_fips$var <- row.names(single_fips)
+    
+    single_fips <- merge(single_fips, pop_table, by.x = "var", by.y = "variable")
+    single_fips <- subset(single_fips, age != "Total")
+    single_fips$age <- factor(single_fips$age, levels = single_fips$age, labels = single_fips$age)
+    single_fips[single_fips$gender == "Male",]$population = -1 * single_fips[single_fips$gender == "Male",]$population
+    
+    return(single_fips)
+}
+
+# https://rpubs.com/walkerke/pyramids_ggplot2
+plotPopPyramid <- function(data){
+    p <- ggplot(data, aes(x = age, y = population, fill = gender))
+    p <- p + geom_bar(subset = .(gender == "Female"), stat = "identity")
+    p <- p + geom_bar(subset = .(gender == "Male"), stat = "identity")
+    p <- p + coord_flip()
+    p <- p + scale_fill_brewer(palette = "Set1")
+    p <- p + theme_bw()
+    p
+}
+
+getPopPyramidDF(data = DCMetro_tract_map_sp)
+
+plotPopPyramid(getPopPyramidDF(data = DCMetro_tract_map_sp, fips = "51510200107"))
+
+saveRDS(DCMetro_tract_map_sp, file = "../census_shiny/DCMetro_tract_map_sp.rds")
+
+
+# TODO: work on acs (population and income data)
