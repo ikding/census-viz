@@ -8,30 +8,22 @@ library(scales)
 library(ggmap)
 library(sp)
 library(rgeos)
-# library(acs)
 library(gpclib)
 library(maptools)
-# library(choroplethr)
-# library(choroplethrZip)
 gpclibPermit()
-# library(UScensus2010)
-# library(UScensus2010tract)
-# library(UScensus2010blkgrp)
-# library(UScensus2010blk)
-# library(zipcode)
-# library(jsonlite)
 library(tools)
 library(leaflet)
 library(stringr)
 library(magrittr)
 
 censusDataFolder <- "../../../../data/census/census2010/"
+acsDataFolder <-  "../../../../data/census/acs/"
 shapeDataFolder <- "../../../../data/census/shapefiles/geojson/"
 state_fips <- read.csv("../../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
 
 # Load census data ----
 
-mergeData <- function(state = "DC", table = c("P1", "P12"), geolevel = "tract"){
+mergeCensusData <- function(state = "DC", table = c("P1", "P12"), geolevel = "tract"){
     data <- read.table(file = paste0(censusDataFolder, "/", state, "_", table[1], "_", geolevel, ".txt"), header = T, sep = "\t", stringsAsFactors = F)
     for (i in 2:length(table)){
 #         print(paste0(state, "_", t, "_", geolevel, ".txt"))
@@ -55,12 +47,12 @@ mergeData <- function(state = "DC", table = c("P1", "P12"), geolevel = "tract"){
 
 }
 
-DC_tract <- mergeData(state = "DC", geolevel = "tract")
-DC_bg <- mergeData(state = "DC", geolevel = "blockgroup")
-MD_tract <- mergeData(state = "MD", geolevel = "tract")
-MD_bg <- mergeData(state = "MD", geolevel = "blockgroup")
-VA_tract <- mergeData(state = "VA", geolevel = "tract")
-VA_bg <- mergeData(state = "VA", geolevel = "blockgroup")
+DC_tract <- mergeCensusData(state = "DC", geolevel = "tract")
+DC_bg <- mergeCensusData(state = "DC", geolevel = "blockgroup")
+MD_tract <- mergeCensusData(state = "MD", geolevel = "tract")
+MD_bg <- mergeCensusData(state = "MD", geolevel = "blockgroup")
+VA_tract <- mergeCensusData(state = "VA", geolevel = "tract")
+VA_bg <- mergeCensusData(state = "VA", geolevel = "blockgroup")
 
 # DC_tract_P1 <- read.table(file = paste0(censusDataFolder, 'DC_P1_tract.txt'), header = T, sep = "\t", stringsAsFactors = F)
 # str(DC_tract_P1)
@@ -371,3 +363,4 @@ saveRDS(DCMetro_tract_map_sp, file = "../census_shiny/DCMetro_tract_map_sp.rds")
 
 
 # TODO: work on acs (population and income data)
+
