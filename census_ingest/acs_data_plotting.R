@@ -70,19 +70,36 @@ readGeoJSON <- function(state = "DC", year = 2011, geolevel = c("tract", "bg"), 
 }
 
 mergeSpDataFrame <- function(spDF, DF, matchvar = "fips"){
+    
+    # Test to see if I can have multi year data in the same SpatialPolygonDataFrame
+#     spDF <- readGeoJSON(state = "MD", year = 2010, geolevel = "tract", format = "sp")
+#     DF <- mergeAcsData(state = "MD", geolevel = "tract", year = 2011)
+#     matchvar = "fips"
+    
     o <- match(rownames(as(spDF, "data.frame")), DF[,matchvar])
     DF <- DF[o,]
     row.names(DF) <- DF[,matchvar]
+#     spDF <- spCbind(spDF, DF)
     return(spCbind(spDF, DF))
 }
 
 mergeSpaceTimeDF <- function(state = "DC", year = 2010, geolevel = "tract"){
     spDF_ <- readGeoJSON(state, year, geolevel, format = "sp")
     DF_ <- mergeAcsData(state, geolevel = "tract", year)
-#     DF_ <- subset(DC_tract, endyear == year)
     return(mergeSpDataFrame(spDF = spDF_, DF = DF_))
 }
 
+mergeAllYearsSpaceTimeDF <- function(state = "DC", shapeyear = 2010, year = c(2010:2013), geolevel = "tract"){
+    
+    spDF_ <- readGeoJSON(state, year = shapeyear, geolevel, format = "sp")
+    for (y in year){
+        DF_ <- mergeAcsData(state, geolevel = geolevel, year = y)
+        names(DF_)[-(1:5)] <- paste0(names(DF_)[-(1:5)], ".", y)
+        spDF_ <- mergeSpDataFrame(spDF_, DF_)
+    }
+    
+    return(spDF_)
+}
 
 DC_tract_shape <- readGeoJSON(state = "DC", year = 2010, geolevel = "tract", format = "sp")
 MD_tract_shape <- readGeoJSON(state = "MD", year = 2010, geolevel = "tract", format = "sp")
@@ -112,7 +129,20 @@ for (y in 2010:2013){
     rm(DC_tract_map, MD_tract_map, VA_tract_map, DCMetro_tract_map_sp)
 }
 
+DC_tract_map <- mergeAllYearsSpaceTimeDF(state = "DC")
+MD_tract_map <- mergeAllYearsSpaceTimeDF(state = "MD")
+VA_tract_map <- mergeAllYearsSpaceTimeDF(state = "VA")
+MD_tract_map <- MD_tract_map[as.integer(str_sub(rownames(as.data.frame(MD_tract_map)), start = 3, end = 5)) %in% c(31, 33),] # Montgomery and Prince George's Counties
+VA_tract_map <- VA_tract_map[as.integer(str_sub(rownames(as.data.frame(VA_tract_map)), start = 3, end = 5)) %in% c(510, 13, 59, 600, 610),] # Alexandria, Arlington, Falls Church, Fairfax
+
+DCMetro_tract_map_sp_acs <- spRbind(MD_tract_map, VA_tract_map)
+DCMetro_tract_map_sp_acs <- spRbind(DC_tract_map, DCMetro_tract_map_sp_acs)
+
+str(DCMetro_tract_map_sp_acs@data)
+names(DCMetro_tract_map_sp_acs@data)
+
 saveRDS(DCMetroSpaceTimeDF, file = "../census_shiny/DCMetroSpaceTimeDF.rds")
+saveRDS(DCMetro_tract_map_sp_acs, file = "../census_shiny/DCMetro_tract_map_sp_acs.rds")
 
 # Leaflet visualization of single year ----
 
