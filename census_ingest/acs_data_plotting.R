@@ -112,8 +112,9 @@ for (y in 2010:2013){
     rm(DC_tract_map, MD_tract_map, VA_tract_map, DCMetro_tract_map_sp)
 }
 
+saveRDS(DCMetroSpaceTimeDF, file = "../census_shiny/DCMetroSpaceTimeDF.rds")
 
-# Leaflet visualization of single year
+# Leaflet visualization of single year ----
 
 DCMetro_tract_map_sp <- DCMetroSpaceTimeDF[['2010']]
 names(DCMetro_tract_map_sp@data)
@@ -282,8 +283,62 @@ plotPopPyramid(getPopPyramidDF(data = DCMetro_tract_map_sp, fips = "51510200107"
 
 getPopPyramidDF(data = DCMetro_tract_map_sp, fips = "51510200107")
 
-saveRDS(DCMetro_tract_map_sp, file = "../census_shiny/DCMetro_tract_map_sp.rds")
+# Income data ----
+
+income_table <- read.csv("acs_income_var_converted.csv", stringsAsFactors = F)
+str(pop_table)
+income_table
+
+getIncomeDF <- function(data, fips = "11001002201"){
+    
+#     data = DCMetro_tract_map_sp; fips = "11001002201"
+    DF <- data@data[,str_sub(names(data@data), start = 1, end = 6) == "B19001"]
+    DF$fips <- rownames(DF)
+    
+    single_fips <- DF[fips,]
+    single_fips <- data.frame(t(single_fips))
+    
+    names(single_fips) <- "population"
+    single_fips$population <- as.numeric(as.character(single_fips$population))
+    
+    # 0-15k
+    single_fips["B19001_003a",] <- single_fips["B19001_002",] + single_fips["B19001_003",]
+    single_fips["B19001_003a.err",] <- sumsqrt(c(single_fips["B19001_002.err",], single_fips["B19001_003.err",]))
+    
+    # 15-30k
+    single_fips["B19001_006a",] <- single_fips["B19001_004",] + single_fips["B19001_005",] + single_fips["B19001_006",]
+    single_fips["B19001_006a.err",] <- sumsqrt(c(single_fips["B19001_004.err",], single_fips["B19001_005.err",], single_fips["B19001_006.err",]))
+    
+    # 30-45k
+    single_fips["B19001_009a",] <- single_fips["B19001_007",] + single_fips["B19001_008",] + single_fips["B19001_009",]
+    single_fips["B19001_009a.err",] <- sumsqrt(c(single_fips["B19001_007.err",], single_fips["B19001_008.err",], single_fips["B19001_009.err",]))
+    
+    # 45-60k
+    single_fips["B19001_011a",] <- single_fips["B19001_010",] + single_fips["B19001_011",]
+    single_fips["B19001_011a.err",] <- sumsqrt(c(single_fips["B19001_010.err",], single_fips["B19001_011.err",]))
+    
+    single_fips$var <- row.names(single_fips)
+    single_fips <- merge(single_fips, income_table, by.x = "var", by.y = "variable")
+    single_fips$income <- factor(single_fips$income, levels = unique(single_fips$income), labels = unique(single_fips$income))
+    
+    single_fips <- cbind(subset(single_fips, measure == "estimate", select = c("var", "population", "income")), subset(single_fips, measure == "error", select = c("population")))
+    names(single_fips) <- c("var", "population", "income", "error")
+    
+    return(single_fips)
+}
 
 
-# TODO: work on acs (population and income data)
+plotIncomeBin <- function(input_DF){
+#     input_DF = single_fips
+    p <- ggplot(data = input_DF, aes(x = income, y = population, fill = income))
+    p <- p + geom_bar(stat = "identity")
+    p <- p + geom_errorbar(aes(ymax = population + error, ymin = population - error), width = 0.5)
+#     p <- p + coord_flip()
+#     p <- p + scale_fill_brewer(palette = "Spectral")
+    p <- p + scale_fill_manual(values = c(brewer.pal(9, "Blues")[2:9], "#062553", "#041B3C"))
+    p <- p + theme_bw() + theme(legend.position="none")
+    p
+}
 
+getIncomeDF(data = DCMetro_tract_map_sp, fips = "51510200107")
+plotIncomeBin(getIncomeDF(data = DCMetro_tract_map_sp, fips = "51510200107"))
