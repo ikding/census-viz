@@ -25,9 +25,9 @@ library(acs)
 
 # Difference between household and family income: http://economistsoutlook.blogs.realtor.org/2014/04/08/median-income-family-vs-household/
 
-acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("..", "..", "..", "..", "data", "census", "acs")){    
-#     Test variables, delete by the end
-#     endyear = 2011; span = 5; state = "MD"; geo_level = "block group"; table.number = "B01003"
+acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("..", "..", "..", "..", "data", "census", "acs")){
+    
+    # This function download the data from acs and write the dataframe to tab-delimited text file.
     
     library(acs)
     
@@ -40,7 +40,7 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     }
     
     # geo.make geography depending on state and geo_level specified by user
-    
+
     if (geo_level == "county"){
         geo <- geo.make(state = state_code, county = "*", check = T)
     } else if (geo_level == "tract"){
@@ -93,10 +93,10 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     
 }
 
+# Example use of functions (not run):
 # acsSave(endyear = 2012, state = "MD", geo_level = "county", table.number = "B01001")
 # acsSave(endyear = 2010, state = "MD", geo_level = "tract", table.number = "B01001")
 # acsSave(endyear = 2012, state = "DC", geo_level = "block group", table.number = "B01001")
-# str(acsSave(endyear = 2012, state = "MD", geo_level = "block group", table.number = "B01001"))
 
 # Use nested for loops to download every single combination of the data
 # Supported year range for 5-year API: http://www.census.gov/data/developers/data-sets/acs-survey-5-year-data.html

@@ -1,4 +1,4 @@
-# Import libraries
+# Import libraries ----
 library(rgdal)
 library(plyr)
 library(dplyr)
@@ -83,12 +83,45 @@ mergeSpDataFrame <- function(spDF, DF, matchvar = "fips"){
     return(spCbind(spDF, DF))
 }
 
-mergeSpaceTimeDF <- function(state = "DC", year = 2010, geolevel = "tract"){
-    spDF_ <- readGeoJSON(state, year, geolevel, format = "sp")
-    DF_ <- mergeAcsData(state, geolevel = "tract", year)
-    return(mergeSpDataFrame(spDF = spDF_, DF = DF_))
-}
+# This code block will merge data from all year ranges into the a list of SpatialPolygonDataFrames; each spDF is indexed by the as.character(year).
+# This effort is ditched in favor of the single spDF, below, because the new approach renders faster in app.
 
+# mergeSpaceTimeDF <- function(state = "DC", year = 2010, geolevel = "tract"){
+#     spDF_ <- readGeoJSON(state, year, geolevel, format = "sp")
+#     DF_ <- mergeAcsData(state, geolevel = "tract", year)
+#     return(mergeSpDataFrame(spDF = spDF_, DF = DF_))
+# }
+
+# DC_tract_shape <- readGeoJSON(state = "DC", year = 2010, geolevel = "tract", format = "sp")
+# MD_tract_shape <- readGeoJSON(state = "MD", year = 2010, geolevel = "tract", format = "sp")
+# VA_tract_shape <- readGeoJSON(state = "VA", year = 2010, geolevel = "tract", format = "sp")
+# 
+# DC_tract_map <- mergeSpDataFrame(spDF = DC_tract_shape, DF = DC_tract)
+# MD_tract_map <- mergeSpDataFrame(spDF = MD_tract_shape, DF = MD_tract)
+# VA_tract_map <- mergeSpDataFrame(spDF = VA_tract_shape, DF = VA_tract)
+# 
+# DCMetroSpaceTimeDF <- list()
+# 
+# for (y in 2010:2013){
+#     #     y = 2011
+#     DC_tract_map <- mergeSpaceTimeDF(state = "DC", year = y)
+#     MD_tract_map <- mergeSpaceTimeDF(state = "MD", year = y)
+#     VA_tract_map <- mergeSpaceTimeDF(state = "VA", year = y)
+#     
+#     MD_tract_map <- MD_tract_map[as.integer(str_sub(rownames(as.data.frame(MD_tract_map)), start = 3, end = 5)) %in% c(31, 33),] # Montgomery and Prince George's Counties
+#     VA_tract_map <- VA_tract_map[as.integer(str_sub(rownames(as.data.frame(VA_tract_map)), start = 3, end = 5)) %in% c(510, 13, 59, 600, 610),] # Alexandria, Arlington, Falls Church, Fairfax
+#     
+#     DCMetro_tract_map_sp <- spRbind(MD_tract_map, VA_tract_map)
+#     DCMetro_tract_map_sp <- spRbind(DC_tract_map, DCMetro_tract_map_sp)
+#     
+#     DCMetroSpaceTimeDF[[as.character(y)]] <- DCMetro_tract_map_sp
+#     
+#     print(paste("Year", y, "... Done"))
+#     rm(DC_tract_map, MD_tract_map, VA_tract_map, DCMetro_tract_map_sp)
+# }
+# saveRDS(DCMetroSpaceTimeDF, file = "../census_shiny/DCMetroSpaceTimeDF.rds")
+
+# A better version of the function to merge data from all year ranges into a single SpatialPolygonDataFrame; rename the variables with year suffixes (eg: var.2010)
 mergeAllYearsSpaceTimeDF <- function(state = "DC", shapeyear = 2010, year = c(2010:2013), geolevel = "tract"){
     
     spDF_ <- readGeoJSON(state, year = shapeyear, geolevel, format = "sp")
@@ -99,34 +132,6 @@ mergeAllYearsSpaceTimeDF <- function(state = "DC", shapeyear = 2010, year = c(20
     }
     
     return(spDF_)
-}
-
-DC_tract_shape <- readGeoJSON(state = "DC", year = 2010, geolevel = "tract", format = "sp")
-MD_tract_shape <- readGeoJSON(state = "MD", year = 2010, geolevel = "tract", format = "sp")
-VA_tract_shape <- readGeoJSON(state = "VA", year = 2010, geolevel = "tract", format = "sp")
-
-DC_tract_map <- mergeSpDataFrame(spDF = DC_tract_shape, DF = DC_tract)
-MD_tract_map <- mergeSpDataFrame(spDF = MD_tract_shape, DF = MD_tract)
-VA_tract_map <- mergeSpDataFrame(spDF = VA_tract_shape, DF = VA_tract)
-
-DCMetroSpaceTimeDF <- list()
-
-for (y in 2010:2013){
-#     y = 2011
-    DC_tract_map <- mergeSpaceTimeDF(state = "DC", year = y)
-    MD_tract_map <- mergeSpaceTimeDF(state = "MD", year = y)
-    VA_tract_map <- mergeSpaceTimeDF(state = "VA", year = y)
-    
-    MD_tract_map <- MD_tract_map[as.integer(str_sub(rownames(as.data.frame(MD_tract_map)), start = 3, end = 5)) %in% c(31, 33),] # Montgomery and Prince George's Counties
-    VA_tract_map <- VA_tract_map[as.integer(str_sub(rownames(as.data.frame(VA_tract_map)), start = 3, end = 5)) %in% c(510, 13, 59, 600, 610),] # Alexandria, Arlington, Falls Church, Fairfax
-    
-    DCMetro_tract_map_sp <- spRbind(MD_tract_map, VA_tract_map)
-    DCMetro_tract_map_sp <- spRbind(DC_tract_map, DCMetro_tract_map_sp)
-    
-    DCMetroSpaceTimeDF[[as.character(y)]] <- DCMetro_tract_map_sp
-    
-    print(paste("Year", y, "... Done"))
-    rm(DC_tract_map, MD_tract_map, VA_tract_map, DCMetro_tract_map_sp)
 }
 
 DC_tract_map <- mergeAllYearsSpaceTimeDF(state = "DC")
@@ -141,7 +146,6 @@ DCMetro_tract_map_sp_acs <- spRbind(DC_tract_map, DCMetro_tract_map_sp_acs)
 str(DCMetro_tract_map_sp_acs@data)
 names(DCMetro_tract_map_sp_acs@data)
 
-saveRDS(DCMetroSpaceTimeDF, file = "../census_shiny/DCMetroSpaceTimeDF.rds")
 saveRDS(DCMetro_tract_map_sp_acs, file = "../census_shiny/DCMetro_tract_map_sp_acs.rds")
 
 # Leaflet visualization of single year ----
@@ -163,7 +167,6 @@ m <- leaflet(DCMetro_tract_map_sp) %>%
                               paste0("<strong>FIPS: </strong>", DCMetro_tract_map_sp@data$fips),
                               paste0("<strong>Median Household Income: </strong>", DCMetro_tract_map_sp@data$B19013_001, " +/- ", round(DCMetro_tract_map_sp@data$B19013_001.err))
                 )
-                #                 popup = paste0("<strong>Population: </strong>", DCMetro_tract_map_sp@data$P0010001, "<br/>", "<strong>FIPS: </strong>: ", DCMetro_tract_map_sp@data$fips)
     ) %>%
     addLegend(pal = qpal, values = ~B19013_001, opacity = 1)
 m
@@ -357,14 +360,11 @@ getIncomeDF <- function(data, fips = "11001002201"){
     return(single_fips)
 }
 
-
 plotIncomeBin <- function(input_DF){
 #     input_DF = single_fips
     p <- ggplot(data = input_DF, aes(x = income, y = population, fill = income))
     p <- p + geom_bar(stat = "identity")
     p <- p + geom_errorbar(aes(ymax = population + error, ymin = population - error), width = 0.5)
-#     p <- p + coord_flip()
-#     p <- p + scale_fill_brewer(palette = "Spectral")
     p <- p + scale_fill_manual(values = c(brewer.pal(9, "Blues")[2:9], "#062553", "#041B3C"))
     p <- p + theme_bw() + theme(legend.position="none")
     p
