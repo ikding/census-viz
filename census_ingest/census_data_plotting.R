@@ -20,6 +20,8 @@ censusDataFolder <- "../../../../data/census/census2010/"
 acsDataFolder <-  "../../../../data/census/acs/"
 shapeDataFolder <- "../../../../data/census/shapefiles/geojson/"
 state_fips <- read.csv("../../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
+county_fips <- read.csv("../../../../data/census/shapefiles/county_fips.csv", stringsAsFactors = F)
+
 
 # Load census data ----
 
@@ -300,6 +302,10 @@ plotPopPyramid <- function(data){
 getPopPyramidDF(data = DCMetro_tract_map_sp)
 
 plotPopPyramid(getPopPyramidDF(data = DCMetro_tract_map_sp, fips = "51510200107"))
+
+# Add county and state names for human comprehension
+DCMetro_tract_map_sp@data <- merge(DCMetro_tract_map_sp@data, county_fips, by.x = c("State.FIPS", "County.FIPS"), by.y = c("statefp", "countyfp"), all.x = TRUE, sort = FALSE)
+row.names(DCMetro_tract_map_sp@data) <- DCMetro_tract_map_sp@data$fips
 
 # Save the RDS object for use in shiny app
 saveRDS(DCMetro_tract_map_sp, file = "../census_shiny/DCMetro_tract_map_sp.rds")
