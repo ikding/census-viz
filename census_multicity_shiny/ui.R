@@ -2,11 +2,18 @@
 library(shiny)
 library(leaflet)
 
-shinyUI(navbarPage("REConnect-Census Explorer",
+shinyUI(navbarPage("Census Explorer",
     
     tabPanel("Census 2010",
         sidebarLayout(position = "right",
             sidebarPanel(
+                selectInput("varMetroCensus", label = "Metro to Display", 
+                            choices = list("Washington DC" = "DC",
+                                           "New York City" = "NY",
+                                           "San Francisco" = "SF"
+                                           ),
+                            selected = "DC"
+                ),
                 selectInput("varCensus", label = "Choropleth variable", 
                             choices = list("Total Population" = "P0010001"),
                             selected = "P0010001"
@@ -33,9 +40,15 @@ shinyUI(navbarPage("REConnect-Census Explorer",
         sidebarLayout(position = "right",
             sidebarPanel(
                 sliderInput("endyear", "End Year:", min = 2010, max = 2013, value = 2013, step = 1, ticks = F, sep = ""),
+                selectInput("varMetroACS", label = "Metro to Display", 
+                            choices = list("Washington DC" = "DC",
+                                           "New York City" = "NY"
+                            ),
+                            selected = "DC"
+                ),
                 selectInput("varACS", label = "Choropleth variable", 
                     choices = list("Total Population" = "B01003_001", "Median Household Income" = "B19013_001"),
-                    selected = "B01003_001"
+                    selected = "B19013_001"
                 ),
                 selectInput("colorACS", label = "Color scheme", 
                     choices = list("Numeric (Continuous)" = "colorNumeric",
@@ -43,12 +56,11 @@ shinyUI(navbarPage("REConnect-Census Explorer",
                                    "Quantiles (Discrete)" = "colorQuantile"),
                     selected = "colorNumeric"),
                 br(),
-                textOutput("acsPopText"),
-                plotOutput("acsPopPyramidPlot", height = 300),
-                br(),
                 textOutput("acsIncomeText"),
-                plotOutput("acsIncomePlot", height = 300)
-               
+                plotOutput("acsIncomePlot", height = 250),
+                br(),
+                textOutput("acsPopText"),
+                plotOutput("acsPopPyramidPlot", height = 300)
            ),          
            
            mainPanel(

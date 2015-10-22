@@ -6,10 +6,12 @@ library(RColorBrewer)
 library(stringr)
 library(plyr)
 
-# Load datasets ----
-
-censusData <- readRDS("data/SFMetro_tract_map_census.rds") # Census data
-DCMetro_tract_map_sp_acs <- readRDS("data/NYMetro_tract_map_acs.rds") # acs_data
+# Load stationary datasets ----
+censusDataDC <- readRDS("data/DCMetro_tract_map_census.rds") # Census data
+censusDataNY <- readRDS("data/NYMetro_tract_map_census.rds") # Census data
+censusDataSF <- readRDS("data/SFMetro_tract_map_census.rds") # Census data
+acsDataDC <- readRDS("data/DCMetro_tract_map_acs.rds") # acs_data
+acsDataNY <- readRDS("data/NYMetro_tract_map_acs.rds") # acs_data
 county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
 
 # Load dataframe for list of variables and attributes for population and income sub-plots
@@ -198,14 +200,44 @@ shinyServer(function(input, output) {
 
     # Census plotting ----
     
+    censusData <- reactive({
+        if (input$varMetroCensus == "DC"){
+            censusDataDC
+        } else if (input$varMetroCensus == "NY"){
+            censusDataNY
+        } else if (input$varMetroCensus == "SF"){
+            censusDataSF
+        }
+    })
+    
+    viewLngCensus <- reactive({
+        if (input$varMetroCensus == "DC"){
+            -77.1
+        } else if (input$varMetroCensus == "NY"){
+            -74.0
+        } else if (input$varMetroCensus == "SF"){
+            -122.2
+        }
+    })
+    
+    viewLatCensus <- reactive({
+        if (input$varMetroCensus == "DC"){
+            38.9
+        } else if (input$varMetroCensus == "NY"){
+            40.7
+        } else if (input$varMetroCensus == "SF"){
+            37.6
+        }
+    })
+    
     # Color palette reactive to user input
     pal_census <- reactive({
         if (input$colorCensus == "colorNumeric"){
-            colorNumeric("YlOrRd", censusData@data[, input$varCensus])
+            colorNumeric("YlOrRd", censusData()@data[, input$varCensus])
         } else if (input$colorCensus == "colorBin"){
-            colorBin("YlOrRd", censusData@data[, input$varCensus], 6, pretty = T)
+            colorBin("YlOrRd", censusData()@data[, input$varCensus], 6, pretty = T)
         } else if (input$colorCensus == "colorQuantile") {
-            colorQuantile("YlOrRd", censusData@data[, input$varCensus], 10)
+            colorQuantile("YlOrRd", censusData()@data[, input$varCensus], 10)
         }
         
     })
@@ -213,7 +245,6 @@ shinyServer(function(input, output) {
     # Leaflet map elements that doesn't need to react to user input
     output$censusmap <- renderLeaflet({
         leaflet() %>% 
-            setView(lng = -77.1, lat = 38.95, zoom = 10) %>% 
             addProviderTiles("CartoDB.Positron") 
     })
     
@@ -222,21 +253,22 @@ shinyServer(function(input, output) {
         pal <- pal_census()
         legendTitle <- "Total Population"
         
-        leafletProxy("censusmap", data = censusData) %>%
+        leafletProxy("censusmap", data = censusData()) %>%
             clearShapes() %>%
             clearControls() %>%
-            addPolygons(layerId = row.names(censusData@data), stroke = T, weight = 3, 
+            setView(lng = viewLngCensus(), lat = viewLatCensus(), zoom = 10) %>% 
+            addPolygons(layerId = row.names(censusData()@data), stroke = T, weight = 3, 
                 color = "white", fillOpacity  = 0.5, 
-                fillColor = ~pal(censusData@data[,input$varCensus]),
+                fillColor = ~pal(censusData()@data[,input$varCensus]),
                 popup = paste(sep = "<br/>",
-                    paste0("<strong>State: </strong>", censusData@data$state),
-                    paste0("<strong>County: </strong>", censusData@data$countyname),
-                    paste0("<strong>Tract: </strong>", censusData@data$Name),
-                    paste0("<strong>FIPS: </strong>", censusData@data$fips),
-                    paste0("<strong>Population: </strong>", censusData@data$P0010001)
+                    paste0("<strong>State: </strong>", censusData()@data$state),
+                    paste0("<strong>County: </strong>", censusData()@data$countyname),
+                    paste0("<strong>Tract: </strong>", censusData()@data$Name),
+                    paste0("<strong>FIPS: </strong>", censusData()@data$fips),
+                    paste0("<strong>Population: </strong>", censusData()@data$P0010001)
                 )
             ) %>%
-            addLegend(pal = pal, values = ~censusData@data[,input$varCensus], opacity = 1, title = legendTitle)
+            addLegend(pal = pal, values = ~censusData()@data[,input$varCensus], opacity = 1, title = legendTitle)
         
     })
     
@@ -244,7 +276,7 @@ shinyServer(function(input, output) {
         event <- input$censusmap_shape_click
         if (is.null(event))
             return(NULL)
-        subset(censusData@data, fips == as.character(event$id))
+        subset(censusData()@data, fips == as.character(event$id))
     })
 
     output$censusPopText <- reactive({
@@ -257,7 +289,7 @@ shinyServer(function(input, output) {
         event <- input$censusmap_shape_click
         if (is.null(event))
             return()
-        getCensusPopPyramidDF(data = censusData, fips = event$id)
+        getCensusPopPyramidDF(data = censusData(), fips = event$id)
     })
 
     output$censusPopPyramidPlot <- renderPlot({
@@ -269,11 +301,39 @@ shinyServer(function(input, output) {
 
     # ACS plotting ----
 
+    acsDataAllYear <- reactive({
+        if (input$varMetroACS == "DC"){
+            acsDataDC
+        } else if (input$varMetroACS == "NY"){
+            acsDataNY
+        }
+    })
+    
+    viewLngACS <- reactive({
+        if (input$varMetroACS == "DC"){
+            -77.1
+        } else if (input$varMetroACS == "NY"){
+            -74.0
+        } else if (input$varMetroACS == "SF"){
+            -122.2
+        }
+    })
+    
+    viewLatACS <- reactive({
+        if (input$varMetroACS == "DC"){
+            38.9
+        } else if (input$varMetroACS == "NY"){
+            40.7
+        } else if (input$varMetroACS == "SF"){
+            37.6
+        }
+    })
+    
     # Get acsData for a particular year, depending on sliderInput
     acsData <- reactive({
-        acsYearIdx <- which(str_sub(names(DCMetro_tract_map_sp_acs@data), start = -4, end = -1) == as.character(input$endyear))
-        acsDataTemp <- DCMetro_tract_map_sp_acs
-        acsDataTemp@data <- DCMetro_tract_map_sp_acs@data[c(1:17, acsYearIdx)]
+        acsYearIdx <- which(str_sub(names(acsDataAllYear()@data), start = -4, end = -1) == as.character(input$endyear))
+        acsDataTemp <- acsDataAllYear()
+        acsDataTemp@data <- acsDataAllYear()@data[c(1:17, acsYearIdx)]
         names(acsDataTemp@data)[-(1:17)] <- str_sub(names(acsDataTemp@data)[-(1:17)], end = -6)
         acsDataTemp
     })
@@ -294,7 +354,6 @@ shinyServer(function(input, output) {
     # that doesn't change with reactiveInput, such as zoom and tile
     output$acsmap <- renderLeaflet({
         leaflet() %>% 
-            setView(lng = -77.1, lat = 38.95, zoom = 10) %>% 
             addProviderTiles("CartoDB.Positron") 
     })
 
@@ -322,6 +381,7 @@ shinyServer(function(input, output) {
         leafletProxy("acsmap", data = acsData()) %>%
             clearShapes() %>%
             clearControls() %>%
+            setView(lng = viewLngACS(), lat = viewLatACS(), zoom = 10) %>% 
             addPolygons(layerId = row.names(acsData()@data), stroke = T, weight = 3, 
                 color = "white", fillOpacity  = 0.5, 
                 fillColor = ~pal(acsData()@data[,input$varACS]),
