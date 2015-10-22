@@ -47,6 +47,8 @@ mergeAcsData <- function(state = "DC", geolevel = "tract", year = 2010:2013, tab
 DC_tract <- mergeAcsData(state = "DC")
 MD_tract <- mergeAcsData(state = "MD")
 VA_tract <- mergeAcsData(state = "VA")
+NY_tract <- mergeAcsData(state = "NY")
+CA_tract <- mergeAcsData(state = "CA")
 
 
 # Read shape files
@@ -137,8 +139,14 @@ mergeAllYearsSpaceTimeDF <- function(state = "DC", shapeyear = 2010, year = c(20
 DC_tract_map <- mergeAllYearsSpaceTimeDF(state = "DC")
 MD_tract_map <- mergeAllYearsSpaceTimeDF(state = "MD")
 VA_tract_map <- mergeAllYearsSpaceTimeDF(state = "VA")
+NY_tract_map <- mergeAllYearsSpaceTimeDF(state = "NY")
+CA_tract_map <- mergeAllYearsSpaceTimeDF(state = "CA")
+
 MD_tract_map <- MD_tract_map[as.integer(str_sub(rownames(as.data.frame(MD_tract_map)), start = 3, end = 5)) %in% c(31, 33),] # Montgomery and Prince George's Counties
 VA_tract_map <- VA_tract_map[as.integer(str_sub(rownames(as.data.frame(VA_tract_map)), start = 3, end = 5)) %in% c(510, 13, 59, 600, 610),] # Alexandria, Arlington, Falls Church, Fairfax
+NY_tract_map <- NY_tract_map[as.integer(str_sub(rownames(as.data.frame(NY_tract_map)), start = 3, end = 5)) %in% c(5, 47, 61, 81, 85),] # Bronx, Brooklyn (King County), Manhattan (New York County), Queens, Staten Island (Richmond County)
+CA_tract_map <- CA_tract_map[as.integer(str_sub(rownames(as.data.frame(CA_tract_map)), start = 3, end = 5)) %in% c(1, 75, 81, 85),] # Alameda, San Francisco, Santa Clara, San Mateo
+
 
 DCMetro_tract_map_sp_acs <- spRbind(MD_tract_map, VA_tract_map)
 DCMetro_tract_map_sp_acs <- spRbind(DC_tract_map, DCMetro_tract_map_sp_acs)

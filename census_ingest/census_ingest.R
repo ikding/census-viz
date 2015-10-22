@@ -42,12 +42,12 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
     # geo.make geography depending on state and geo_level specified by user
 
     if (geo_level == "county"){
-        geo <- geo.make(state = state_code, county = "*", check = T)
+        geo <- geo.make(state = state_code, county = "*", check = F)
     } else if (geo_level == "tract"){
-        geo <- geo.make(state = state_code, county = "*", tract = "*", check = T)
+        geo <- geo.make(state = state_code, county = "*", tract = "*", check = F)
     } else if (geo_level == "block group"){
         geo_interim <- acs.fetch(endyar = endyear, span = span, geography=geo.make(state = state_code, county="*"), table.number="B01003")
-        geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim)$county), tract = "*", block.group = "*", check = T)
+        geo <- geo.make(state = state_code, county = as.numeric(geography(geo_interim)$county), tract = "*", block.group = "*", check = F)
     } else {
         print("Supported geo_level: county, tract, block group")
         break
@@ -109,13 +109,13 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
 
 # Large test set
 list_year = seq(2010, 2013, 1)
-list_state = c("DC", "MD", "VA")
+list_state = c("CA", "DC", "MD", "NY", "VA")
 list_geo = c("county", "tract", "block group")
 list_table = c("B01001", "B01003", "B19001", "B19013")
 output_path = file.path("..", "..", "..", "..", "data", "census", "acs")
-counter = 0
 
 start = proc.time()
+counter = 0
 
 for (y in list_year){
     for (s in list_state){
