@@ -165,5 +165,15 @@ NY_tract_map <- NY_tract_map[as.integer(str_sub(rownames(as.data.frame(NY_tract_
 DCMetro_tract_map_acs <- spRbind(MD_tract_map, VA_tract_map)
 DCMetro_tract_map_acs <- spRbind(DC_tract_map, DCMetro_tract_map_acs)
 
-saveRDS(DCMetro_tract_map_acs, file = "../census_shiny/data/DCMetro_tract_map_acs.rds")
-saveRDS(NY_tract_map, file = "../census_shiny/data/NYMetro_tract_map_acs.rds")
+# Make duplicate record of the same year for NY, in order to work with shiny app properly
+dummyRecord <- NY_tract_map@data[,18:154]
+names(dummyRecord) <-gsub(".2013", ".2012", names(dummyRecord))
+NY_tract_map@data <- cbind(NY_tract_map@data, dummyRecord)
+names(dummyRecord) <-gsub(".2012", ".2011", names(dummyRecord))
+NY_tract_map@data <- cbind(NY_tract_map@data, dummyRecord)
+names(dummyRecord) <-gsub(".2011", ".2010", names(dummyRecord))
+NY_tract_map@data <- cbind(NY_tract_map@data, dummyRecord)
+
+
+saveRDS(DCMetro_tract_map_acs, file = "../census_multicity_shiny/data/DCMetro_tract_map_acs.rds")
+saveRDS(NY_tract_map, file = "../census_multicity_shiny/data/NYMetro_tract_map_acs.rds")
