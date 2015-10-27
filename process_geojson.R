@@ -3,13 +3,13 @@ library(rgdal)
 library(maptools)
 library(stringr)
 library(ggplot2)
+library(tools)
 
 # Hard-coded file paths
 censusDataFolder <- "../../../data/census/census2010/"
 acsDataFolder <-  "../../../data/census/acs/"
 shapeDataFolder <- "../../../data/census/shapefiles/geojson/"
-state_fips <- read.csv("../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
-county_fips <- read.csv("../../../data/census/shapefiles/county_fips.csv", stringsAsFactors = F)
+hexagonDataFolder <- "../../../data/geojson_processed/"
 
 # Read in the GeoJSON as SpatialPolygonDataFrame ----
 
@@ -96,3 +96,42 @@ NY_tract@bbox
 #         min       max
 # x -74.25909 -73.70027
 # y  40.47740  40.91758
+
+writeSpatialShape()
+
+DC_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_5e-03.geojson"), layer = "OGRGeoJSON")
+NY_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_NY_5e-03.geojson"), layer = "OGRGeoJSON")
+
+ggplot() +
+    geom_path(data = fortify(DC_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
+    geom_path(data = fortify(DCMetro_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+    coord_map() + theme_minimal()
+
+ggplot() +
+    geom_path(data = fortify(NY_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
+    geom_path(data = fortify(NY_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+    coord_map() + theme_minimal()
+
+# For some reason, the writeOGR function will make duplicate IDs which cannot be read back into R.
+# The get-around is to first use maptools::writeSpatialShape to write to shape file, then use ogr2ogr from command line to convert shape file to geojson.
+# command line:
+# $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON censustract_DC_2010.geojson DC_tract/DC_tract.shp
+writeSpatialShape(x = DCMetro_tract, fn = "DC_tract")
+writeSpatialShape(x = NY_tract, fn = "NY_tract")
+
+readOGR(dsn = "DC.geojson", layer = "OGRGeoJSON")
+
+# Save to RDS for shiny ----
+saveRDS(DCMetro_tract, file = "shape_shiny/data/DC_tract.rds")
+saveRDS(NY_tract, file = "shape_shiny/data/NY_tract.rds")
+
+saveGeoJSONToRDS <- function(source_path, dest_path, file){
+    spData <- readOGR(dsn = file.path(source_path, file), layer = "OGRGeoJSON")
+    saveRDS(object = spData, file = file.path(dest_path, paste0(file_path_sans_ext(file), ".rds")))
+}
+
+list.files(hexagonDataFolder)
+
+for (f in list.files(hexagonDataFolder)){
+    saveGeoJSONToRDS(source_path = hexagonDataFolder, dest_path = file.path("shape_shiny", "data"), file = f)
+}
