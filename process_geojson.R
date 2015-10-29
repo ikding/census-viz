@@ -135,3 +135,19 @@ list.files(hexagonDataFolder)
 for (f in list.files(hexagonDataFolder)){
     saveGeoJSONToRDS(source_path = hexagonDataFolder, dest_path = file.path("shape_shiny", "data"), file = f)
 }
+
+
+# Filtered Hexagons
+
+list.files(hexagonDataFolder)
+
+raw_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03.geojson"), layer = "OGRGeoJSON")
+filtered_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03_filtered.geojson"), layer = "OGRGeoJSON")
+
+qplot_map(raw_hexagon)
+qplot_map(filtered_hexagon)
+
+ggplot() +
+    geom_path(data = fortify(filtered_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
+    geom_path(data = fortify(DCMetro_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+    coord_map() + theme_minimal()
