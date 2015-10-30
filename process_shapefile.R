@@ -30,11 +30,7 @@ zillowNY <- zillowNY[!(zillowNY@data$REGIONID %in% c(197427, 193974, 195489, 275
 zillowNY <- zillowNY[str_sub(zillowNY@data$CITY, 1, 13) == "New York City",]
 qplot_map(zillowNY)
 
-writeSpatialShape(x = zillowNY, fn = "ZillowNeighborhoods-NY-subset")
-
-zillowNY2 <- readOGR(dsn = "../../../data/zillow/ZillowNeighborhoods-NY-subset/", layer = "ZillowNeighborhoods-NY-subset") # DC 2014 Zillow shapefile
-
-identical(zillowNY, zillowNY2)
+writeSpatialShape(x = zillowNY, fn = "../../../data/zillow/ZillowNeighborhoods-NY-subset/ZillowNeighborhoods-NY-subset")
 
 zillowNYName <- aggregate(cbind(long, lat) ~ id, data=zillowNY, FUN=mean)
 
