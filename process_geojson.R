@@ -4,6 +4,8 @@ library(maptools)
 library(stringr)
 library(ggplot2)
 library(tools)
+library(leaflet)
+library(RColorBrewer)
 
 # Hard-coded file paths
 censusDataFolder <- "../../../data/census/census2010/"
@@ -137,17 +139,44 @@ for (f in list.files(hexagonDataFolder)){
 }
 
 
-# Filtered Hexagons
+# Filtered Hexagons, DC
 
 list.files(hexagonDataFolder)
 
-raw_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03.geojson"), layer = "OGRGeoJSON")
-filtered_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03_filtered.geojson"), layer = "OGRGeoJSON")
+raw_hexagon_DC <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03.geojson"), layer = "OGRGeoJSON")
+filtered_hexagon_DC <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_4e-03_filtered.geojson"), layer = "OGRGeoJSON")
 
-qplot_map(raw_hexagon)
-qplot_map(filtered_hexagon)
+qplot_map(raw_hexagon_DC)
+qplot_map(filtered_hexagon_DC)
 
 ggplot() +
-    geom_path(data = fortify(filtered_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
+    geom_path(data = fortify(filtered_hexagon_DC), aes(x = long, y = lat, group = id), color = "blue") +
     geom_path(data = fortify(DCMetro_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
     coord_map() + theme_minimal()
+
+leaflet() %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    setView(lng = -77.0, lat = 38.9, zoom = 11) %>%
+    addPolygons(data = DCMetro_tract, group = "Census Tract", color = brewer.pal(name = "Set1", n = 3)[1], fill = F) %>%
+    addPolygons(data = filtered_hexagon_DC, group = "Filtered Hexagons", color = brewer.pal(name = "Set1", n = 3)[2])
+
+# Filtered Hexagons, NY
+
+list.files(hexagonDataFolder)
+
+raw_hexagon_NY <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_NY_3e-03.geojson"), layer = "OGRGeoJSON")
+filtered_hexagon_NY <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_NY_3e-03_filtered.geojson"), layer = "OGRGeoJSON")
+
+qplot_map(raw_hexagon_NY)
+qplot_map(filtered_hexagon_NY)
+
+ggplot() +
+    geom_path(data = fortify(NY_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+    geom_path(data = fortify(raw_hexagon_NY), aes(x = long, y = lat, group = id), color = "blue") +
+    coord_map() + theme_minimal()
+
+leaflet() %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    setView(lng = -74.0, lat = 40.7, zoom = 10) %>%
+    addPolygons(data = NY_tract, group = "Census Tract", color = brewer.pal(name = "Set1", n = 3)[1], fill = F) %>%
+    addPolygons(data = filtered_hexagon_NY, group = "Filtered Hexagons", color = brewer.pal(name = "Set1", n = 3)[2])
