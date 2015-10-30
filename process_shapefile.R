@@ -2,6 +2,8 @@ library(rgdal)
 library(ggplot2)
 library(stringr)
 library(maptools)
+library(leaflet)
+library(RColorBrewer)
 
 qplot_map <- function(spData){
     ggplot(data = fortify(spData)) + geom_polygon(aes(x = long, y = lat, group = id), fill = "white", color = "black") + coord_map()
@@ -13,8 +15,43 @@ ggplot(data = subset(fortify(zillowNY), lat < 42)) + geom_polygon(aes(x = long, 
 
 
 # zillowDCName <- data.frame(gCentroid(zillowDC, byid= TRUE))
-zillowNY[zillowNY@data$REGIONID == 197427,] # corrupted shape
 zillowNY[zillowNY@data$REGIONID == 194318,] # good shape
+
+zillowNY[zillowNY@data$REGIONID == 197427,] # Red Hook
+zillowNY[zillowNY@data$REGIONID == 193974,] # Coney Island
+zillowNY[zillowNY@data$REGIONID == 195489,] # Howard Beach
+zillowNY[zillowNY@data$REGIONID == 275247,] # Rosedale
+zillowNY[zillowNY@data$REGIONID == 198200,] # Steinway
+zillowNY[zillowNY@data$REGIONID == 193942,] # College Point
+zillowNY[zillowNY@data$REGIONID == 276060,] # Whitestone
+zillowNY[zillowNY@data$REGIONID == 343224,] # Eastchester
+
+qplot_map(zillowNY[zillowNY@data$REGIONID == 197427,]) # Red Hook
+qplot_map(zillowNY[zillowNY@data$REGIONID == 193974,]) # Coney Island
+qplot_map(zillowNY[zillowNY@data$REGIONID == 195489,]) # Howard Beach
+qplot_map(zillowNY[zillowNY@data$REGIONID == 275247,]) # Rosedale
+qplot_map(zillowNY[zillowNY@data$REGIONID == 198200,]) # Steinway
+qplot_map(zillowNY[zillowNY@data$REGIONID == 193942,]) # College Point
+qplot_map(zillowNY[zillowNY@data$REGIONID == 276060,]) # Whitestone
+qplot_map(zillowNY[zillowNY@data$REGIONID == 343224,]) # Eastchester
+
+palette <- brewer.pal(8, "Set1")
+
+leaflet() %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    setView(lng = -74.0, lat = 40.7, zoom = 10) %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 197427,], group = "Red Hook") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 193974,], group = "Coney Island") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 195489,], group = "Howard Beach") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 275247,], group = "Rosedale") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 198200,], group = "Steinway") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 193942,], group = "College Point") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 276060,], group = "Whitestone") %>%
+    addPolygons(data = zillowNY[zillowNY@data$REGIONID == 343224,], group = "Eastchester") %>%
+    addLayersControl(
+        baseGroups = c("Red Hook", "Coney Island", "Howard Beach", "Rosedale", "Steinway", "College Point", "Whitestone", "Eastchester"),
+        options = layersControlOptions(collapsed = FALSE)
+    )
 
 # Ill-formed polygons: 
 # 197427 Red Hook
