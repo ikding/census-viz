@@ -77,3 +77,28 @@ p <- p + geom_text(data = zillowNYName, aes(x = long, y = lat, label = id), size
 p <- p + labs(title = "New York City Neighborhoods (from Zillow.com)", x = "longitude", y = "latitude")
 p <- p + coord_map() + theme_minimal()
 p
+
+
+# Combine Zillow-DC and Zillow-VA to form one json file ----
+
+zillowDC <- readOGR(dsn = "../../../data/zillow/ZillowNeighborhoods-DC", layer = "ZillowNeighborhoods-DC")
+zillowVA <- readOGR(dsn = "../../../data/zillow/ZillowNeighborhoods-VA", layer = "ZillowNeighborhoods-VA")
+table(zillowVA@data$CITY, zillowVA@data$COUNTY)
+zillowVA <- zillowVA[zillowVA@data$COUNTY %in% c("Arlington", "Fairfax"),] # Keep only Arlington and Alexandria
+str(zillowVA@data)
+
+# Change polygon IDs to zillow ids to prevent ID collision, which will interfere with joining
+rownames(as(zillowDC, "data.frame"))
+rownames(as(zillowVA, "data.frame"))
+
+zillowVA <- spChFIDs(zillowVA, as.character(zillowVA@data$REGIONID))
+zillowDC <- spChFIDs(zillowDC, as.character(zillowDC@data$REGIONID))
+
+zillowDCMetro <- spRbind(zillowDC, zillowVA)
+
+# For some reason, the writeOGR function will make duplicate IDs which cannot be read back into R.
+# The get-around is to first use maptools::writeSpatialShape to write to shape file, then use ogr2ogr from command line to convert shape file to geojson.
+# command line:
+# $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON censustract_DC_2010.geojson DC_tract/DC_tract.shp
+writeSpatialShape(x = zillowDCMetro, fn = "../../../data/geojson_processed/DC_zillow/DC_zillow")
+
