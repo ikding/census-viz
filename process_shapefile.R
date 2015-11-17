@@ -62,12 +62,16 @@ leaflet() %>%
 # 193942 College Point
 # 276060 Whitestone
 # 343224 Eastchester
-zillowNY <- zillowNY[!(zillowNY@data$REGIONID %in% c(197427, 193974, 195489, 275247, 198200, 193942, 276060, 343224)),]
+# zillowNY <- zillowNY[!(zillowNY@data$REGIONID %in% c(197427, 193974, 195489, 275247, 198200, 193942, 276060, 343224)),]
 
 zillowNY <- zillowNY[str_sub(zillowNY@data$CITY, 1, 13) == "New York City",]
 qplot_map(zillowNY)
 
-writeSpatialShape(x = zillowNY, fn = "../../../data/zillow/ZillowNeighborhoods-NY-subset/ZillowNeighborhoods-NY-subset")
+zillowNY <- spChFIDs(zillowNY, as.character(zillowNY@data$REGIONID))
+writeSpatialShape(x = zillowNY, fn = "../../../data/geojson_processed/zillow_NY/zillow_NY")
+# Need to run this on command line to convert to geojson:
+# ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON zillow_nhood_NY.geojson zillow_NY/zillow_NY.shp
+
 
 zillowNYName <- aggregate(cbind(long, lat) ~ id, data=zillowNY, FUN=mean)
 
@@ -99,6 +103,6 @@ zillowDCMetro <- spRbind(zillowDC, zillowVA)
 # For some reason, the writeOGR function will make duplicate IDs which cannot be read back into R.
 # The get-around is to first use maptools::writeSpatialShape to write to shape file, then use ogr2ogr from command line to convert shape file to geojson.
 # command line:
-# $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON censustract_DC_2010.geojson DC_tract/DC_tract.shp
-writeSpatialShape(x = zillowDCMetro, fn = "../../../data/geojson_processed/DC_zillow/DC_zillow")
+# $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON zillow_nhood_DC.geojson zillow_DC/zillow_DC.shp
+writeSpatialShape(x = zillowDCMetro, fn = "../../../data/geojson_processed/zillow_DC/zillow_DC")
 
