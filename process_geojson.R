@@ -11,6 +11,8 @@ library(RColorBrewer)
 censusDataFolder <- "../../../data/census/census2010/"
 acsDataFolder <-  "../../../data/census/acs/"
 shapeDataFolder <- "../../../data/census/shapefiles/geojson/"
+state_fips <- read.csv("../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
+county_fips <- read.csv("../../../data/census/shapefiles/county_fips.csv", stringsAsFactors = F)
 hexagonDataFolder <- "../../../data/geojson_processed/"
 
 # Read in the GeoJSON as SpatialPolygonDataFrame ----
@@ -100,6 +102,18 @@ NY_tract@bbox
 # y  40.47740  40.91758
 
 writeSpatialShape()
+
+# AUS Metro: census tracts within Austin metropolitan area
+AUS_tract <- readGeoJSON(state = "TX", year = 2010, geolevel = "tract", format = "sp", county_subset = c("021", "055", "209", "453", "491")) #  Bastrop, Caldwell, Hays, Travis, and Williamson (Travis is not to be confused with Austin county that has nothing to do with the city of Austin)
+
+qplot_map(AUS_tract)
+
+writeOGR(obj = AUS_tract, dsn = "AUS_tract", driver = "GeoJSON", layer = "OGRGeoJSON")
+
+AUS_tract@bbox
+#         min       max
+# x -98.29760 -97.02446
+# y  29.63072  30.90619
 
 DC_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_5e-03.geojson"), layer = "OGRGeoJSON")
 NY_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_NY_5e-03.geojson"), layer = "OGRGeoJSON")
