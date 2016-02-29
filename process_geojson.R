@@ -11,6 +11,8 @@ library(RColorBrewer)
 censusDataFolder <- "../../../data/census/census2010/"
 acsDataFolder <-  "../../../data/census/acs/"
 shapeDataFolder <- "../../../data/census/shapefiles/geojson/"
+state_fips <- read.csv("../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
+county_fips <- read.csv("../../../data/census/shapefiles/county_fips.csv", stringsAsFactors = F)
 hexagonDataFolder <- "../../../data/geojson_processed/"
 
 # Read in the GeoJSON as SpatialPolygonDataFrame ----
@@ -101,8 +103,21 @@ NY_tract@bbox
 
 writeSpatialShape()
 
+# AUS Metro: census tracts within Austin metropolitan area
+AUS_tract <- readGeoJSON(state = "TX", year = 2010, geolevel = "tract", format = "sp", county_subset = c("021", "055", "209", "453", "491")) #  Bastrop, Caldwell, Hays, Travis, and Williamson (Travis is not to be confused with Austin county that has nothing to do with the city of Austin)
+
+qplot_map(AUS_tract)
+
+writeOGR(obj = AUS_tract, dsn = "AUS_tract", driver = "GeoJSON", layer = "OGRGeoJSON")
+
+AUS_tract@bbox
+#         min       max
+# x -98.29760 -97.02446
+# y  29.63072  30.90619
+
 DC_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_DC_5e-03.geojson"), layer = "OGRGeoJSON")
 NY_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_NY_5e-03.geojson"), layer = "OGRGeoJSON")
+AUS_hexagon <- readOGR(dsn = file.path(hexagonDataFolder, "hexbin_AUS_5e-03.geojson"), layer = "OGRGeoJSON")
 
 ggplot() +
     geom_path(data = fortify(DC_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
@@ -114,18 +129,25 @@ ggplot() +
     geom_path(data = fortify(NY_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
     coord_map() + theme_minimal()
 
+ggplot() +
+  geom_path(data = fortify(AUS_hexagon), aes(x = long, y = lat, group = id), color = "blue") +
+  geom_path(data = fortify(AUS_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+  coord_map() + theme_minimal()
+
 # For some reason, the writeOGR function will make duplicate IDs which cannot be read back into R.
 # The get-around is to first use maptools::writeSpatialShape to write to shape file, then use ogr2ogr from command line to convert shape file to geojson.
 # command line:
 # $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON censustract_DC_2010.geojson DC_tract/DC_tract.shp
 writeSpatialShape(x = DCMetro_tract, fn = "DC_tract")
 writeSpatialShape(x = NY_tract, fn = "NY_tract")
+writeSpatialShape(x = AUS_tract, fn = "AUS_tract")
 
 readOGR(dsn = "DC.geojson", layer = "OGRGeoJSON")
 
 # Save to RDS for shiny ----
 saveRDS(DCMetro_tract, file = "shape_shiny/data/DC_tract.rds")
 saveRDS(NY_tract, file = "shape_shiny/data/NY_tract.rds")
+saveRDS(AUS_tract, file = "shape_shiny/data/AUS_tract.rds")
 
 saveGeoJSONToRDS <- function(source_path, dest_path, file){
     spData <- readOGR(dsn = file.path(source_path, file), layer = "OGRGeoJSON")
@@ -171,12 +193,13 @@ qplot_map(raw_hexagon_NY)
 qplot_map(filtered_hexagon_NY)
 
 ggplot() +
-    geom_path(data = fortify(NY_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
-    geom_path(data = fortify(raw_hexagon_NY), aes(x = long, y = lat, group = id), color = "blue") +
-    coord_map() + theme_minimal()
+  geom_path(data = fortify(NY_tract), aes(x = long, y = lat, group = id), color = "black", size = 1) +
+  geom_path(data = fortify(raw_hexagon_NY), aes(x = long, y = lat, group = id), color = "blue") +
+  coord_map() + theme_minimal()
 
 leaflet() %>%
-    addProviderTiles("CartoDB.Positron") %>%
-    setView(lng = -74.0, lat = 40.7, zoom = 10) %>%
-    addPolygons(data = NY_tract, group = "Census Tract", color = brewer.pal(name = "Set1", n = 3)[1], fill = F) %>%
-    addPolygons(data = filtered_hexagon_NY, group = "Filtered Hexagons", color = brewer.pal(name = "Set1", n = 3)[2])
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng = -74.0, lat = 40.7, zoom = 10) %>%
+  addPolygons(data = NY_tract, group = "Census Tract", color = brewer.pal(name = "Set1", n = 3)[1], fill = F) %>%
+  addPolygons(data = filtered_hexagon_NY, group = "Filtered Hexagons", color = brewer.pal(name = "Set1", n = 3)[2])
+

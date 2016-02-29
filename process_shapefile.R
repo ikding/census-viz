@@ -106,3 +106,32 @@ zillowDCMetro <- spRbind(zillowDC, zillowVA)
 # $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON zillow_nhood_DC.geojson zillow_DC/zillow_DC.shp
 writeSpatialShape(x = zillowDCMetro, fn = "../../../data/geojson_processed/zillow_DC/zillow_DC")
 
+# Combine Zillow-DC and Zillow-VA to form one json file ----
+
+
+## PROCESS AUSTIN shapefile
+zillowAUS <- readOGR(dsn = "../../../data/zillow/ZillowNeighborhoods-TX", layer = "ZillowNeighborhoods-TX")
+zillowAUS <- zillowAUS[zillowAUS@data$COUNTY %in% c("Travis"),] # Keep only Travis county (Austin)
+
+qplot_map(zillowAUS) 
+
+#Manually go through plots of individual neighboorhoods
+i=0
+i=i+1
+qplot_map(zillowAUS[zillowAUS@data$REGIONID == zillowAUS@data$REGIONID[i],])
+
+zillowAUS <- spChFIDs(zillowAUS, as.character(zillowAUS@data$REGIONID))
+
+#Visualize in leaflet
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(lng = -97,7, lat = 30.3, zoom = 10) %>%
+  addPolygons(data = zillowAUS, group = "Austin") %>%
+  addLayersControl(
+    baseGroups = c("Austin"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+writeSpatialShape(x = zillowAUS, fn = "../../../data/geojson_processed/zillow_AUS/zillow_AUS")
+#Command line
+# $ ogr2ogr -s_srs crs:84 -t_srs crs:84 -f GeoJSON zillow_nhood_AUS.geojson zillow_AUS/zillow_AUS.shp
