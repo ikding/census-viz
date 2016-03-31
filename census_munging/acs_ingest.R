@@ -19,26 +19,22 @@ library(acs)
 # B19202: Median Nonfamily Household Income In The Past 12 Months
 # B19301: Per Capita Income In The Past 12 Months
 
-# Housing units status (probably not necessary - REConnect team should have more granular data)
-# B25002: Occupancy Status
-# B25003: Tenure (owner vs renter occupied)
-
 # Difference between household and family income: http://economistsoutlook.blogs.realtor.org/2014/04/08/median-income-family-vs-household/
 
-acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("..", "..", "..", "..", "data", "census", "acs")){
-    
+acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tract", "block group"), table.number = "B01003", output_path = file.path("data", "census", "acs")){
+
     # This function download the data from acs and write the dataframe to tab-delimited text file.
-    
+
     library(acs)
-    
+
     # Load state FIPS list and convert to integers
-    state_fips <- read.csv("../../../../data/census/shapefiles/fips.csv", stringsAsFactors = F)
+    state_fips <- read.csv("data/fips.csv", stringsAsFactors = F)
     state_code <- state_fips[state_fips$twoletter == state,]$code
     if (length(state_code) != 1){
         print(paste("State" , state, "does not exist."))
         break
     }
-    
+
     # geo.make geography depending on state and geo_level specified by user
 
     if (geo_level == "county"){
@@ -52,33 +48,33 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
         print("Supported geo_level: county, tract, block group")
         break
     }
-    
+
     acsData <- acs.fetch(endyear = endyear, span = span, geography = geo, table.number = table.number)
-    
+
     # Get fips code from state, county, and block groups, when available,
     # and concatenate to get long-form FIPS for plotting.
-    
+
     acsDataGeo <- geography(acsData)
     fips <-  paste0(sprintf("%02s", acsDataGeo$state))
-    
+
     if ("county" %in% names(acsDataGeo)){
         fips <- paste0(fips, sprintf("%03s", acsDataGeo$county))
     }
-    
+
     if ("tract" %in% names(acsDataGeo)){
         fips <- paste0(fips, sprintf("%06s", acsDataGeo$tract))
     }
-    
+
     if ("blockgroup" %in% names(acsDataGeo)){
         fips <- paste0(fips, sprintf("%01s", acsDataGeo$blockgroup))
     }
-    
+
     acsDataGeo$fips <- fips
-    
+
     # Get estimates from acs data; merge fips codes to the dataframe
     acsDataEst <- data.frame(estimate(acsData))
     acsDataEst$NAME <- rownames(acsDataEst)
-    
+
     # Get standard errors from acs data; merge fips codes to the dataframe
     acsDataErr <- data.frame(standard.error(acsData))
     acsDataErr$NAME <- rownames(acsDataErr)
@@ -88,9 +84,9 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
 
     # Write output to tab-delimited file in the output_path
     write.table(acsDataAll, file = file.path(output_path, paste0(state, "_", sub(" ", "", geo_level), "_", endyear-span+1, "-", endyear, "_", table.number, ".txt")), sep = "\t", row.names = F)
-    
+
     return(acsDataAll)
-    
+
 }
 
 # Example use of functions (not run):
@@ -108,11 +104,12 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
 # list_table = c("B01003") # c("B01001", "B01003", "B19001", "B19013")
 
 # Large test set
-list_year = seq(2010, 2013, 1)
+# list_year = seq(2010, 2013, 1)
+list_year = 2014 # let's just get 2014 data
 list_state = c("CA", "DC", "MD", "NY", "VA")
 list_geo = c("county", "tract", "block group")
 list_table = c("B01001", "B01003", "B19001", "B19013")
-output_path = file.path("..", "..", "..", "..", "data", "census", "acs")
+output_path = file.path("data", "census", "acs")
 
 start = proc.time()
 counter = 0
@@ -133,4 +130,4 @@ for (y in list_year){
 
 end = proc.time()
 
-start-end # It took about 55 minutes on my home internet to download all 144 combinations
+end-start # It took about 55 minutes on my home internet to download all 144 combinations
