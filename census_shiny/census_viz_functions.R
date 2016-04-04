@@ -51,8 +51,10 @@ plotCensusPopPyramid <- function(data){
     # This function is used to plot population pyramid, using the dataframe from the previous function, getCensusPopPyramidDF.
 
     p <- ggplot(data, aes(x = age, y = population, fill = gender))
-    p <- p + geom_bar(subset = .(gender == "Female"), stat = "identity")
-    p <- p + geom_bar(subset = .(gender == "Male"), stat = "identity")
+    # Subsetting arg in geom_bar was deprecated in ggplo2 v2.0.
+    # See here: http://stackoverflow.com/questions/34588232/subset-parameter-in-layers-is-no-longer-working-with-ggplot2-2-0-0
+    p <- p + geom_bar(data = data[data$gender == "Female",], stat = "identity")
+    p <- p + geom_bar(data = data[data$gender == "Male",], stat = "identity")
     p <- p + coord_flip()
     p <- p + scale_fill_brewer(palette = "Set1")
     p <- p + theme_bw() + theme(legend.position="top")
@@ -113,8 +115,8 @@ getACSPopPyramidDF <- function(data, fips = "11001002201"){
 plotACSPopPyramid <- function(input_DF){
     # This function is used to plot population pyramid, using the dataframe from the previous function, getACSPopPyramidDF.
     p <- ggplot(data = input_DF, aes(x = age, y = population, fill = gender))
-    p <- p + geom_bar(subset = .(gender == "Female"), stat = "identity")
-    p <- p + geom_bar(subset = .(gender == "Male"), stat = "identity")
+    p <- p + geom_bar(data = data[data$gender == "Female",], stat = "identity")
+    p <- p + geom_bar(data = data[data$gender == "Male",], stat = "identity")
     p <- p + geom_errorbar(aes(ymax = population + error, ymin = population - error))
     p <- p + coord_flip()
     p <- p + scale_fill_brewer(palette = "Set1")

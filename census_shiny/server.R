@@ -5,21 +5,21 @@ library(ggplot2)
 library(RColorBrewer)
 library(stringr)
 library(plyr)
-source('census_shiny/census_viz_functions.R')
+source('census_viz_functions.R')
 
 # Load stationary datasets ----
-censusDataDC <- readRDS("./census_shiny/data/DCMetro_tract_map_census.rds") # Census data
-censusDataNY <- readRDS("./census_shiny/data/NYMetro_tract_map_census.rds") # Census data
-censusDataSF <- readRDS("./census_shiny/data/SFMetro_tract_map_census.rds") # Census data
-acsDataDC <- readRDS("./census_shiny/data/DCMetro_tract_map_acs.rds") # acs_data
-acsDataNY <- readRDS("./census_shiny/data/NYMetro_tract_map_acs.rds") # acs_data
-acsDataSF <- readRDS("./census_shiny/data/NYMetro_tract_map_acs.rds") # acs_data
-county_fips <- read.csv("./census_shiny/data/county_fips.csv", stringsAsFactors = F)
+censusDataDC <- readRDS("data/DCMetro_tract_map_census.rds") # Census data
+censusDataNY <- readRDS("data/NYMetro_tract_map_census.rds") # Census data
+censusDataSF <- readRDS("data/SFMetro_tract_map_census.rds") # Census data
+acsDataDC <- readRDS("data/DCMetro_tract_map_acs.rds") # acs_data
+acsDataNY <- readRDS("data/NYMetro_tract_map_acs.rds") # acs_data
+acsDataSF <- readRDS("data/SFMetro_tract_map_acs.rds") # acs_data
+county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
 
 # Load dataframe for list of variables and attributes for population and income sub-plots
-censusPopTable <- read.csv("./census_shiny/data/census_sexbyage_var_converted.csv", stringsAsFactors = F)
-acsPopTable <- read.csv("./census_shiny/data/acs_sexbyage_var_converted.csv", stringsAsFactors = F)
-acsIncomeTable <- read.csv("./census_shiny/data/acs_income_var_converted.csv", stringsAsFactors = F)
+censusPopTable <- read.csv("data/census_sexbyage_var_converted.csv", stringsAsFactors = F)
+acsPopTable <- read.csv("data/acs_sexbyage_var_converted.csv", stringsAsFactors = F)
+acsIncomeTable <- read.csv("data/acs_income_var_converted.csv", stringsAsFactors = F)
 
 shinyServer(function(input, output) {
 
@@ -101,7 +101,7 @@ shinyServer(function(input, output) {
         event <- input$censusmap_shape_click
         if (is.null(event))
             return(NULL)
-        subset(censusData()@data, fips == as.character(event$id))
+        subset(censusData()@data, GEOID == as.character(event$id))
     })
 
     output$censusPopText <- reactive({
@@ -125,21 +125,14 @@ shinyServer(function(input, output) {
 
     # ACS plotting ----
 
-    acsDataAllYear <- reactive({
+    acsData <- reactive({
         if (input$varMetroACS == "DC"){
             acsDataDC
         } else if (input$varMetroACS == "NY"){
             acsDataNY
+        } else if (input$varMetroACS == "SF"){
+            acsDataSF
         }
-    })
-
-    # Get acsData for a particular year, depending on sliderInput
-    acsData <- reactive({
-        acsYearIdx <- which(str_sub(names(acsDataAllYear()@data), start = -4, end = -1) == as.character(input$endyear))
-        acsDataTemp <- acsDataAllYear()
-        acsDataTemp@data <- acsDataAllYear()@data[c(1:17, acsYearIdx)]
-        names(acsDataTemp@data)[-(1:17)] <- str_sub(names(acsDataTemp@data)[-(1:17)], end = -6)
-        acsDataTemp
     })
 
     # color palette that is reactive to user input
