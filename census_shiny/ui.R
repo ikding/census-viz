@@ -36,10 +36,10 @@ shinyUI(navbarPage("Census Explorer",
 
         )
     ),
-    tabPanel("ACS 5-Yr Summary",
+    tabPanel("ACS 5-Yr Summary (2010-2014)",
         sidebarLayout(position = "right",
             sidebarPanel(
-                sliderInput("endyear", "End Year:", min = 2014, max = 2014, value = 2014, step = 1, ticks = F, sep = ""),
+                # sliderInput("endyear", "End Year:", min = 2014, max = 2014, value = 2014, step = 1, ticks = F, sep = ""),
                 selectInput("varMetroACS", label = "Metro to Display",
                             choices = list("Washington DC" = "DC",
                                            "New York City" = "NY",

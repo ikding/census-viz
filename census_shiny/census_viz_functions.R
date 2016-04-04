@@ -115,8 +115,8 @@ getACSPopPyramidDF <- function(data, fips = "11001002201"){
 plotACSPopPyramid <- function(input_DF){
     # This function is used to plot population pyramid, using the dataframe from the previous function, getACSPopPyramidDF.
     p <- ggplot(data = input_DF, aes(x = age, y = population, fill = gender))
-    p <- p + geom_bar(data = data[data$gender == "Female",], stat = "identity")
-    p <- p + geom_bar(data = data[data$gender == "Male",], stat = "identity")
+    p <- p + geom_bar(data = input_DF[input_DF$gender == "Female",], stat = "identity")
+    p <- p + geom_bar(data = input_DF[input_DF$gender == "Male",], stat = "identity")
     p <- p + geom_errorbar(aes(ymax = population + error, ymin = population - error))
     p <- p + coord_flip()
     p <- p + scale_fill_brewer(palette = "Set1")

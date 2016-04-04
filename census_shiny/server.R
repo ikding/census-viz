@@ -35,7 +35,7 @@ shinyServer(function(input, output) {
         }
     })
 
-    viewLng <- reactive({
+    viewLngCensus <- reactive({
         if (input$varMetroCensus == "DC"){
             -77.10
         } else if (input$varMetroCensus == "NY"){
@@ -45,7 +45,7 @@ shinyServer(function(input, output) {
         }
     })
 
-    viewLat <- reactive({
+    viewLatCensus <- reactive({
         if (input$varMetroCensus == "DC"){
             38.94
         } else if (input$varMetroCensus == "NY"){
@@ -81,7 +81,7 @@ shinyServer(function(input, output) {
         leafletProxy("censusmap", data = censusData()) %>%
             clearShapes() %>%
             clearControls() %>%
-            setView(lng = viewLng(), lat = viewLat(), zoom = 10) %>%
+            setView(lng = viewLngCensus(), lat = viewLatCensus(), zoom = 10) %>%
             addPolygons(layerId = row.names(censusData()@data), stroke = T, weight = 3,
                 color = "white", fillOpacity  = 0.5,
                 fillColor = ~pal(censusData()@data[,input$varCensus]),
@@ -135,6 +135,26 @@ shinyServer(function(input, output) {
         }
     })
 
+    viewLngACS <- reactive({
+        if (input$varMetroACS == "DC"){
+            -77.10
+        } else if (input$varMetroACS == "NY"){
+            -73.98
+        } else if (input$varMetroACS == "SF"){
+            -122.20
+        }
+    })
+
+    viewLatACS <- reactive({
+        if (input$varMetroACS == "DC"){
+            38.94
+        } else if (input$varMetroACS == "NY"){
+            40.70
+        } else if (input$varMetroACS == "SF"){
+            37.41
+        }
+    })
+
     # color palette that is reactive to user input
     pal_acs <- reactive({
         if (input$colorACS == "colorNumeric"){
@@ -178,7 +198,7 @@ shinyServer(function(input, output) {
         leafletProxy("acsmap", data = acsData()) %>%
             clearShapes() %>%
             clearControls() %>%
-            setView(lng = viewLng(), lat = viewLat(), zoom = 10) %>%
+            setView(lng = viewLngACS(), lat = viewLatACS(), zoom = 10) %>%
             addPolygons(layerId = row.names(acsData()@data), stroke = T, weight = 3,
                 color = "white", fillOpacity  = 0.5,
                 fillColor = ~pal(acsData()@data[,input$varACS]),
