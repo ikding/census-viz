@@ -14,12 +14,7 @@ censusDataSF <- readRDS("data/SFMetro_tract_map_census.rds") # Census data
 acsDataDC <- readRDS("data/DCMetro_tract_map_acs.rds") # acs_data
 acsDataNY <- readRDS("data/NYMetro_tract_map_acs.rds") # acs_data
 acsDataSF <- readRDS("data/SFMetro_tract_map_acs.rds") # acs_data
-county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
-
-# Load dataframe for list of variables and attributes for population and income sub-plots
-censusPopTable <- read.csv("data/census_sexbyage_var_converted.csv", stringsAsFactors = F)
-acsPopTable <- read.csv("data/acs_sexbyage_var_converted.csv", stringsAsFactors = F)
-acsIncomeTable <- read.csv("data/acs_income_var_converted.csv", stringsAsFactors = F)
+# county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
 
 shinyServer(function(input, output) {
 

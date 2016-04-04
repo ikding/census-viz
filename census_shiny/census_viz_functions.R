@@ -1,3 +1,7 @@
+# Load dataframe for list of variables and attributes for population and income sub-plots
+censusPopTable <- read.csv("data/census_sexbyage_var_converted.csv", stringsAsFactors = F)
+acsPopTable <- read.csv("data/acs_sexbyage_var_converted.csv", stringsAsFactors = F)
+acsIncomeTable <- read.csv("data/acs_income_var_converted.csv", stringsAsFactors = F)
 
 # Function that needs to be loaded only once ----
 
