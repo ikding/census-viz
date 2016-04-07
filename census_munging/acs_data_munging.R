@@ -13,7 +13,7 @@ county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
 
 # Load ACS data ----
 
-mergeAcsData <- function(state = "DC", geolevel = "tract", year = 2010:2014, table = c("B01001", "B01003", "B19001", "B19013")){
+mergeAcsData <- function(state = "DC", geolevel = "tract", year = 2010:2014, table = c("B01001", "B01002", "B01003", "B19001", "B19013")){
 
     # Merge several acs data tables across years
 
@@ -49,7 +49,7 @@ mergeAcsData <- function(state = "DC", geolevel = "tract", year = 2010:2014, tab
 # This code block will merge data from all year ranges into the a list of SpatialPolygonDataFrames; each spDF is indexed by the as.character(year).
 # Had to revert to the list of SpatialPolygonDataFrames because for CA and NY, the census tract changed between 2010 and 2013, and it is not possible to use a single shapefile anymore.
 
-mergeSpDataFrameByState <- function(state = "DC", year = 2010, table = c("B01001", "B01003", "B19001", "B19013"), geolevel = "tract", county_subset = NULL) {
+mergeSpDataFrameByState <- function(state = "DC", year = 2010, table = c("B01001", "B01002", "B01003", "B19001", "B19013"), geolevel = "tract", county_subset = NULL) {
 
     # test code for CA/SF
 #     state = "CA"

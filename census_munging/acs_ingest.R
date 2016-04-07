@@ -8,6 +8,7 @@ library(acs)
 
 # Tables of interest:
 # B01001: Sex by Age
+# B01002: Median Age by Sex
 # B01003: Total Population
 
 # Income:
@@ -108,7 +109,7 @@ acsSave <- function(endyear = 2011, span = 5, state, geo_level = c("county", "tr
 list_year = 2014 # let's just get 2014 data
 list_state = c("CA", "DC", "MD", "NY", "VA")
 list_geo = c("county", "tract", "block group")
-list_table = c("B01001", "B01003", "B19001", "B19013")
+list_table = c("B01001", "B01002", "B01003", "B19001", "B19013")
 output_path = file.path("data", "census", "acs")
 
 start = proc.time()
