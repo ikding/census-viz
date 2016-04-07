@@ -12,7 +12,7 @@ county_fips <- read.csv("data/county_fips.csv", stringsAsFactors = F)
 
 # Load census data ----
 
-mergeCensusData <- function(state = "DC", table = c("P1", "P12"), geolevel = "tract"){
+mergeCensusData <- function(state = "DC", table = c("P1", "P12", "P13"), geolevel = "tract"){
 
     # This function will read in the census data files and merge the tables into a single dataframe and fill in the fips column by concaternating state, county, tract, and blockgroup fips codes. Finally it will return the dataframe.
 
@@ -42,7 +42,7 @@ mergeCensusData <- function(state = "DC", table = c("P1", "P12"), geolevel = "tr
 
 # Wrapper function to tie all three steps together
 
-mergeSpDataFrameByState <- function(state = "DC", table = c("P1", "P12"), geolevel = "tract", year = 2010, matchvar = "fips", county_subset = NULL){
+mergeSpDataFrameByState <- function(state = "DC", table = c("P1", "P12", "P13"), geolevel = "tract", year = 2010, matchvar = "fips", county_subset = NULL){
     spDF_ = readGeoJSON(state = state, year = year, geolevel = geolevel, format = "sp")
     DF_ = mergeCensusData(state = state, geolevel = geolevel)
     county_fips <- county_fips
