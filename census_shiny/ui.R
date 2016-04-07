@@ -15,8 +15,9 @@ shinyUI(navbarPage("Census Explorer",
                             selected = "DC"
                 ),
                 selectInput("varCensus", label = "Choropleth variable",
-                            choices = list("Total Population" = "P0010001"),
-                            selected = "P0010001"
+                            choices = list("Median Age" = "P0130001",
+                                           "Total Population" = "P0010001"),
+                        selected = "P0130001"
                 ),
                 selectInput("colorCensus", label = "Color scheme",
                             choices = list("Numeric (Continuous)" = "colorNumeric",
@@ -25,6 +26,7 @@ shinyUI(navbarPage("Census Explorer",
                             selected = "colorNumeric"),
                 br(),
                 textOutput("censusPopText"),
+                textOutput("censusMedianAgeText"),
                 br(),
                 plotOutput("censusPopPyramidPlot", height = 400)
             ),
@@ -49,18 +51,25 @@ shinyUI(navbarPage("Census Explorer",
                 ),
 
                 selectInput("varACS", label = "Choropleth variable",
-                    choices = list("Total Population" = "B01003_001", "Median Household Income" = "B19013_001"),
-                    selected = "B19013_001"
+                    choices = list("Median Age" = "B01002_001",
+                                   "Median Household Income" = "B19013_001",
+                                   "Total Population" = "B01003_001"),
+                    selected = "B101002_001"
                 ),
+
                 selectInput("colorACS", label = "Color scheme",
                     choices = list("Numeric (Continuous)" = "colorNumeric",
                                    "Numeric (Discrete)" = "colorBin",
                                    "Quantiles (Discrete)" = "colorQuantile"),
                     selected = "colorNumeric"),
+
                 br(),
+
                 textOutput("acsIncomeText"),
                 plotOutput("acsIncomePlot", height = 250),
+
                 br(),
+
                 textOutput("acsPopText"),
                 plotOutput("acsPopPyramidPlot", height = 300)
            ),

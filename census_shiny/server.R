@@ -53,13 +53,24 @@ shinyServer(function(input, output) {
     # Color palette reactive to user input
     pal_census <- reactive({
         if (input$colorCensus == "colorNumeric"){
-            colorNumeric("YlOrRd", censusData()@data[, input$varCensus])
+            colorNumeric("RdYlBu", boxplot(censusData()@data[, input$varCensus], plot=FALSE)$stats[c(1,5)])
         } else if (input$colorCensus == "colorBin"){
-            colorBin("YlOrRd", censusData()@data[, input$varCensus], 6, pretty = T)
+            colorBin("RdYlBu", boxplot(censusData()@data[, input$varCensus], plot=FALSE)$stats[c(1,5)], 6, pretty = T)
         } else if (input$colorCensus == "colorQuantile") {
-            colorQuantile("YlOrRd", censusData()@data[, input$varCensus], 10)
+            colorQuantile("RdYlBu", censusData()@data[, input$varCensus], 10)
         }
 
+    })
+
+#     choices = list("Median Age" = "P0130001",
+#                    "Total Population" = "P0010001"),
+
+    legendTitleCensus <- reactive({
+        if (input$varCensus == "P0130001"){
+            "Median Age"
+        } else if (input$varCensus == "P0010001"){
+            "Total Population"
+        }
     })
 
     # Leaflet map elements that doesn't need to react to user input
@@ -71,7 +82,7 @@ shinyServer(function(input, output) {
     # Leaflet map elements that react to user input
     observe({
         pal <- pal_census()
-        legendTitle <- "Total Population"
+        legendTitle <- legendTitleCensus()
 
         leafletProxy("censusmap", data = censusData()) %>%
             clearShapes() %>%
@@ -85,10 +96,11 @@ shinyServer(function(input, output) {
                     paste0("<strong>County: </strong>", censusData()@data$countyname),
                     paste0("<strong>Tract: </strong>", censusData()@data$Name),
                     paste0("<strong>FIPS: </strong>", censusData()@data$fips),
-                    paste0("<strong>Population: </strong>", censusData()@data$P0010001)
+                    paste0("<strong>Population: </strong>", censusData()@data$P0010001),
+                    paste0("<strong>Median Age: </strong>", censusData()@data$P0130001)
                 )
             ) %>%
-            addLegend(pal = pal, values = ~censusData()@data[,input$varCensus], opacity = 1, title = legendTitle)
+            addLegend(pal = pal, values = ~boxplot(censusData()@data[, input$varCensus], plot=FALSE)$stats[c(1,5)], opacity = 1, title = legendTitle)
 
     })
 
@@ -103,6 +115,12 @@ shinyServer(function(input, output) {
         if (is.null(tractDataCensus()))
             return("Total Population: NULL" )
         paste("Total Population: ", tractDataCensus()$P0010001)
+    })
+
+    output$censusMedianAgeText <- reactive({
+        if (is.null(tractDataCensus()))
+            return("Median Age: NULL" )
+        paste("Median Age: ", tractDataCensus()$P0130001)
     })
 
     censusPopData <- reactive({
@@ -153,11 +171,11 @@ shinyServer(function(input, output) {
     # color palette that is reactive to user input
     pal_acs <- reactive({
         if (input$colorACS == "colorNumeric"){
-            colorNumeric("YlOrRd", acsData()@data[, input$varACS])
+            colorNumeric("RdYlBu", boxplot(acsData()@data[, input$varACS], plot=FALSE)$stats[c(1,5)])
         } else if (input$colorACS == "colorBin"){
-            colorBin("YlOrRd", acsData()@data[, input$varACS], 6, pretty = T)
+            colorBin("RdYlBu", boxplot(acsData()@data[, input$varACS], plot=FALSE)$stats[c(1,5)], 6, pretty = T)
         } else if (input$colorACS == "colorQuantile") {
-            colorQuantile("YlOrRd", acsData()@data[, input$varACS], 10)
+            colorQuantile("RdYlBu", acsData()@data[, input$varACS], 10)
         }
 
     })
@@ -183,7 +201,10 @@ shinyServer(function(input, output) {
             "Total Population"
         } else if (input$varACS == "B19013_001"){
             "Median Household Income"
+        } else if (input$varACS == "B01002_001"){
+            "Median Age"
         }
+
     })
 
     observe({
@@ -203,12 +224,17 @@ shinyServer(function(input, output) {
                               paste0("<strong>Population: </strong>",
                                      acsData()@data$B01003_001, " +/- ",
                                      round(acsData()@data$B01003_001.err)),
+                              paste0("<strong>Median Age: </strong>",
+                                     acsData()@data$B01002_001, " +/- ",
+                                     round(acsData()@data$B01002_001.err)),
                               paste0("<strong>Median Household Income: </strong>",
                                      acsData()@data$B19013_001, " +/- ",
                                      round(acsData()@data$B19013_001.err))
                               )
                 ) %>%
-            addLegend(pal = pal, values = ~acsData()@data[,input$varACS], opacity = 1, title = legendTitle)
+            addLegend(pal = pal,
+                      values = ~boxplot(acsData()@data[, input$varACS], plot=FALSE)$stats[c(1,5)],
+                      opacity = 1, title = legendTitle)
 
     })
 
